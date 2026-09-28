@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="swasthyaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#115e59" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6" />
+      <stop offset="100%" stop-color="#0d9488" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#042f2e" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#swasthyaGrad)" />
+
+  <!-- Inner Soft Ring -->
+  <rect x="24" y="24" width="464" height="464" rx="88" fill="none" stroke="#2dd4bf" stroke-width="4" stroke-opacity="0.3" />
+
+  <!-- Central Medical Journal Shield -->
+  <g filter="url(#shadow)">
+    <!-- Journal Notebook / Card Base -->
+    <rect x="116" y="96" width="280" height="320" rx="36" fill="#ffffff" />
+    
+    <!-- Spine Accent -->
+    <path d="M116 132 C116 112 132 96 152 96 L164 96 L164 416 L152 416 C132 416 116 400 116 380 Z" fill="#ccfbf1" />
+
+    <!-- Pulse Line & Cross -->
+    <!-- Medical Plus Symbol in Teal -->
+    <rect x="236" y="148" width="40" height="110" rx="10" fill="#0f766e" />
+    <rect x="201" y="183" width="110" height="40" rx="10" fill="#0f766e" />
+    
+    <!-- Center Vital Dot -->
+    <circle cx="256" cy="203" r="10" fill="#5eead4" />
+
+    <!-- EKG Pulse / Heartbeat Line Wave -->
+    <path d="M164 320 L204 320 L220 300 L236 348 L256 280 L276 340 L292 312 L308 320 L356 320" 
+          fill="none" 
+          stroke="#0d9488" 
+          stroke-width="8" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+
+    <!-- Three Small Data Dots (Provenance markers) -->
+    <circle cx="220" cy="376" r="6" fill="#0ea5e9" />
+    <circle cx="256" cy="376" r="6" fill="#6366f1" />
+    <circle cx="292" cy="376" r="6" fill="#14b8a6" />
+  </g>
+</svg>

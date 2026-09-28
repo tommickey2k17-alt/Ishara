@@ -1,0 +1,6 @@
+{
+  "name": "Ishara - Personal Health Journal & Doctor Communication",
+  "description": "Ishara: Frictionless personal health journal to track symptoms, sleep, vitals, and medications, with progressive AI intake, safety red-flag alerts, and doctor-friendly one-page clinical summaries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
