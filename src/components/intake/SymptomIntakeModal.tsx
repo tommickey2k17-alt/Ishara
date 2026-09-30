@@ -94,32 +94,6 @@ export const SymptomIntakeModal: React.FC<Props> = ({
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Reset or initialize on open
-  useEffect(() => {
-    if (isOpen) {
-      if (initialDraft && initialDraft.symptomName) {
-        setSymptomName(initialDraft.symptomName);
-        setSummary({ ...summary, ...initialDraft });
-        setStage('summary_review');
-      } else if (initialSymptomName) {
-        setSymptomName(initialSymptomName);
-        startIntakeFlow(initialSymptomName);
-      } else {
-        setStage('initial_input');
-        setSymptomName('');
-        setChatSteps([]);
-        setQaHistory([]);
-        setActiveSafetyAlert(null);
-      }
-    }
-  }, [isOpen, initialSymptomName, initialDraft]);
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatSteps, isLoading]);
-
-  if (!isOpen) return null;
-
   const startIntakeFlow = async (name: string) => {
     if (!name.trim()) return;
     setSymptomName(name);
@@ -166,6 +140,32 @@ export const SymptomIntakeModal: React.FC<Props> = ({
       setIsLoading(false);
     }
   };
+
+  // Reset or initialize on open
+  useEffect(() => {
+    if (isOpen) {
+      if (initialDraft && initialDraft.symptomName) {
+        setSymptomName(initialDraft.symptomName);
+        setSummary({ ...summary, ...initialDraft });
+        setStage('summary_review');
+      } else if (initialSymptomName) {
+        setSymptomName(initialSymptomName);
+        startIntakeFlow(initialSymptomName);
+      } else {
+        setStage('initial_input');
+        setSymptomName('');
+        setChatSteps([]);
+        setQaHistory([]);
+        setActiveSafetyAlert(null);
+      }
+    }
+  }, [isOpen, initialSymptomName, initialDraft]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatSteps, isLoading]);
+
+  if (!isOpen) return null;
 
   const handleSendAnswer = async (answerText: string) => {
     if (!answerText.trim() || isLoading) return;
@@ -285,7 +285,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 leading-tight">Log a Symptom</h2>
-              <p className="text-xs text-slate-500">Progressive clinical journal intake</p>
+              <p className="text-xs text-slate-500">A quick guide to record how you're feeling</p>
             </div>
           </div>
           <button
@@ -301,10 +301,10 @@ export const SymptomIntakeModal: React.FC<Props> = ({
           <div className="mx-4 mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <strong className="font-semibold">Safety Prompt: </strong>
+              <strong className="font-semibold">Important safety note: </strong>
               {activeSafetyAlert.explanation}
               <div className="mt-1 text-slate-600">
-                Seek professional clinical evaluation if symptoms are severe or worsening. (Emergency: {activeSafetyAlert.emergencyNumber})
+                Please get checked by a doctor right away if your symptoms are severe or getting worse. (Emergency: {activeSafetyAlert.emergencyNumber})
               </div>
             </div>
           </div>
@@ -317,7 +317,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                  What symptom are you experiencing?
+                  What are you feeling?
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -341,7 +341,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <span className="text-xs text-slate-500 font-medium block mb-2">Or select common symptoms:</span>
+                <span className="text-xs text-slate-500 font-medium block mb-2">Or pick a common symptom:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {COMMON_SYMPTOMS.map((item) => (
                     <button
@@ -396,7 +396,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {isLoading && (
                   <div className="flex items-center gap-2 text-xs text-slate-500 italic p-2 bg-slate-50 rounded-xl max-w-[200px]">
                     <Sparkles className="w-3.5 h-3.5 text-teal-600 animate-spin" />
-                    <span>Structuring questions...</span>
+                    <span>Organizing your notes...</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
@@ -409,7 +409,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                   {chatSteps[chatSteps.length - 1].inputType === 'severity_slider' && (
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-slate-700">Severity Rating (0-10):</span>
+                        <span className="font-semibold text-slate-700">How strong does it feel? (0-10):</span>
                         <span className={`px-2 py-0.5 rounded font-bold border ${getSeverityColor(sliderSeverity)}`}>
                           {sliderSeverity} / 10
                         </span>
@@ -426,14 +426,14 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                         <span>0 (None)</span>
                         <span>3 (Mild)</span>
                         <span>5 (Moderate)</span>
-                        <span>7 (Severe)</span>
-                        <span>10 (Worst possible)</span>
+                        <span>7 (Strong)</span>
+                        <span>10 (Very intense)</span>
                       </div>
                       <button
                         onClick={() => handleSendAnswer(`${sliderSeverity}/10`)}
                         className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold cursor-pointer"
                       >
-                        Confirm Severity: {sliderSeverity}/10
+                        Confirm Strength: {sliderSeverity}/10
                       </button>
                     </div>
                   )}
@@ -492,9 +492,9 @@ export const SymptomIntakeModal: React.FC<Props> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-teal-800 font-semibold bg-teal-50 px-2 py-1 rounded border border-teal-200/60">
                   <CheckCircle2 className="w-4 h-4 text-teal-600" />
-                  <span>Symptom Information Captured</span>
+                  <span>Here is what we recorded</span>
                 </div>
-                <span className="text-xs text-slate-500">Edit any details before saving</span>
+                <span className="text-xs text-slate-500">You can adjust or add anything before saving</span>
               </div>
 
               {/* Form fields for summary */}
@@ -502,7 +502,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {/* Symptom Name & Severity */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Symptom Name</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Symptom</label>
                     <input
                       type="text"
                       value={summary.symptomName || ''}
@@ -512,7 +512,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                   </div>
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">
-                      Severity: <span className="text-teal-700 font-bold">{summary.severity ?? 5}/10</span>
+                      Strength: <span className="text-teal-700 font-bold">{summary.severity ?? 5}/10</span>
                     </label>
                     <input
                       type="range"
@@ -528,7 +528,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {/* Start time & Pattern */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Started</label>
+                    <label className="block font-semibold text-slate-700 mb-1">When it started</label>
                     <input
                       type="text"
                       value={summary.startTime || ''}
@@ -538,16 +538,16 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Pattern</label>
+                    <label className="block font-semibold text-slate-700 mb-1">How often it happens</label>
                     <select
                       value={summary.frequency || 'intermittent'}
                       onChange={(e) => setSummary({ ...summary, frequency: e.target.value as any })}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
                     >
-                      <option value="intermittent">Intermittent (comes and goes)</option>
-                      <option value="constant">Constant (continuous)</option>
-                      <option value="single_episode">Single episode</option>
-                      <option value="fluctuating">Fluctuating in intensity</option>
+                      <option value="intermittent">Comes and goes (intermittent)</option>
+                      <option value="constant">Stays the whole time (constant)</option>
+                      <option value="single_episode">Happened once</option>
+                      <option value="fluctuating">Goes up and down in strength</option>
                     </select>
                   </div>
                 </div>
@@ -555,7 +555,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {/* Location & Character */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Location</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Where you feel it</label>
                     <input
                       type="text"
                       value={summary.location || ''}
@@ -565,7 +565,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Character / Description</label>
+                    <label className="block font-semibold text-slate-700 mb-1">What it feels like</label>
                     <input
                       type="text"
                       value={summary.characterDescription || ''}
@@ -578,7 +578,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
 
                 {/* Associated Symptoms */}
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Associated Symptoms</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Other symptoms you noticed</label>
                   <input
                     type="text"
                     value={(summary.associatedSymptoms || []).join(', ')}
@@ -588,7 +588,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                         associatedSymptoms: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                       })
                     }
-                    placeholder="e.g. Light sensitivity, mild nausea"
+                    placeholder="e.g. Sensitive to light, mild nausea"
                     className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
                   />
                 </div>
@@ -596,7 +596,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {/* Relieving / Triggers */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">What makes it better?</label>
+                    <label className="block font-semibold text-slate-700 mb-1">What helps or makes it better?</label>
                     <input
                       type="text"
                       value={(summary.relievingFactors || []).join(', ')}
@@ -606,42 +606,42 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                           relievingFactors: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                         })
                       }
-                      placeholder="e.g. Hydration, rest, dark room"
+                      placeholder="e.g. Drinking water, resting, dark room"
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Possible Triggers / Context</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Possible triggers or what brought it on</label>
                     <input
                       type="text"
                       value={summary.contextNotes || ''}
                       onChange={(e) => setSummary({ ...summary, contextNotes: e.target.value })}
-                      placeholder="e.g. Slept poorly, high work stress"
+                      placeholder="e.g. Slept poorly, busy workday"
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
                     />
                   </div>
                 </div>
 
-                {/* Clinical Tri-State Questions (Yes / No / Not Recorded) */}
+                {/* Tri-State Questions (Yes / No / Not sure) */}
                 <div className="pt-2 border-t border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
-                      Clinical Status Assessment
+                      Specific Details to Check
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      Missing info is kept as 'Not Recorded' (never assumed negative)
+                      (You can leave anything blank if you're not sure)
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <TriStateSelector
-                      label="Fever reported?"
+                      label="Did you have a fever?"
                       value={summary.feverReported}
                       onChange={(val) => setSummary({ ...summary, feverReported: val })}
                       size="sm"
                     />
                     <TriStateSelector
-                      label="Prior occurrence before?"
+                      label="Have you had this before?"
                       value={summary.priorOccurrenceState}
                       onChange={(val) =>
                         setSummary({
@@ -653,7 +653,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                       size="sm"
                     />
                     <TriStateSelector
-                      label="Medically evaluated previously?"
+                      label="Has a doctor checked this before?"
                       value={summary.medicallyEvaluatedState}
                       onChange={(val) =>
                         setSummary({
@@ -665,7 +665,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                       size="sm"
                     />
                     <TriStateSelector
-                      label="Worsening progression?"
+                      label="Is it getting worse over time?"
                       value={summary.worseningProgressionState}
                       onChange={(val) => setSummary({ ...summary, worseningProgressionState: val })}
                       size="sm"
@@ -676,17 +676,17 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 {/* User Suspicion / Unconfirmed Concern */}
                 <div className="pt-2 border-t border-slate-200">
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Unconfirmed User Concern or Suspected Cause (Optional)
+                    What do you think might have caused it? (Optional)
                   </label>
                   <input
                     type="text"
                     value={summary.userSuspicionOrConcern || ''}
                     onChange={(e) => setSummary({ ...summary, userSuspicionOrConcern: e.target.value })}
-                    placeholder="e.g. Wonder if related to screen glare or sinus"
+                    placeholder="e.g. Wonder if related to screen glare, sinus, or posture"
                     className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
                   />
                   <p className="text-[10px] text-slate-500 mt-1">
-                    Marked strictly as an unconfirmed user suspicion. Never recorded as a medical diagnosis.
+                    Saved as your personal thought for your doctor. Never recorded as a medical diagnosis.
                   </p>
                 </div>
               </div>
@@ -710,7 +710,7 @@ export const SymptomIntakeModal: React.FC<Props> = ({
                 onClick={handleFinishAndSave}
                 className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
               >
-                Save Symptom Entry
+                Save to Journal
               </button>
             </>
           ) : (

@@ -16,7 +16,9 @@ import {
   SymptomEpisode,
   UserProfile,
 } from './types';
-import { StorageService } from './services/storageService';
+import { onAuthStateChanged, type User, auth, logoutUser, testConnection } from './services/firebase';
+import { FirestoreService } from './services/firestoreService';
+import { LoginScreen } from './components/auth/LoginScreen';
 import { Header } from './components/common/Header';
 import { BottomNav } from './components/common/BottomNav';
 import { SafetyBanner } from './components/common/SafetyBanner';
@@ -33,27 +35,51 @@ import { DailyCheckInModal } from './components/checkin/DailyCheckInModal';
 import { DoctorReportModal } from './components/report/DoctorReportModal';
 import { DoctorVisitMode } from './components/report/DoctorVisitMode';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
+import { LogoutModal } from './components/common/LogoutModal';
+import { DEMO_USER_PROFILE, DEMO_SYMPTOMS, DEMO_SLEEP_RECORDS, DEMO_MEDICATIONS, DEMO_DAILY_CHECKINS, DEMO_MEASUREMENTS, DEMO_MEDICAL_RECORDS, DEMO_DOCTOR_VISITS, DEMO_SAFETY_ALERTS, DEMO_DOCTOR_REPORT } from './data/demoData';
+
+const BLANK_PROFILE: UserProfile = {
+  id: '',
+  name: '',
+  age: 0,
+  birthDate: '',
+  sex: 'prefer_not_to_say',
+  country: 'US',
+  timezone: 'UTC',
+  emergencyPhone: '',
+  conditions: [],
+  userReportedConcerns: [],
+  allergies: [],
+  trackedMetrics: ['energy', 'mood', 'stress'],
+  usualSleepSchedule: {
+    bedtime: '23:00',
+    wakeTime: '07:00',
+    targetHours: 8,
+  },
+  isDemoData: false,
+};
 
 export default function App() {
-  // Ensure initial data seeded on first load
-  useEffect(() => {
-    StorageService.seedInitialData();
-  }, []);
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
+  // Active navigation tab
   const [activeTab, setActiveTab] = useState<string>('home');
 
-  // Core domain state loaded from StorageService
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => StorageService.getUserProfile());
-  const [symptoms, setSymptoms] = useState<SymptomEpisode[]>(() => StorageService.getSymptoms());
-  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>(() => StorageService.getSleepRecords());
-  const [medications, setMedications] = useState<MedicationItem[]>(() => StorageService.getMedications());
-  const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(() => StorageService.getCheckIns());
-  const [measurements, setMeasurements] = useState<MeasurementRecord[]>(() => StorageService.getMeasurements());
-  const [medicalRecords, setMedicalRecords] = useState<MedicalRecordItem[]>(() => StorageService.getMedicalRecords());
-  const [doctorVisits, setDoctorVisits] = useState<DoctorVisit[]>(() => StorageService.getDoctorVisits());
-  const [safetyAlerts, setSafetyAlerts] = useState<SafetyAlert[]>(() => StorageService.getSafetyAlerts());
-  const [reports, setReports] = useState<DoctorReport[]>(() => StorageService.getReports());
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => StorageService.isDemoMode());
+  // Core domain state tied to authenticated Firestore UID
+  const [userProfile, setUserProfile] = useState<UserProfile>(BLANK_PROFILE);
+  const [symptoms, setSymptoms] = useState<SymptomEpisode[]>([]);
+  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
+  const [medications, setMedications] = useState<MedicationItem[]>([]);
+  const [checkIns, setCheckIns] = useState<DailyCheckIn[]>([]);
+  const [measurements, setMeasurements] = useState<MeasurementRecord[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecordItem[]>([]);
+  const [doctorVisits, setDoctorVisits] = useState<DoctorVisit[]>([]);
+  const [safetyAlerts, setSafetyAlerts] = useState<SafetyAlert[]>([]);
+  const [reports, setReports] = useState<DoctorReport[]>([]);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
   // Modal open/close state
   const [isSymptomIntakeOpen, setIsSymptomIntakeOpen] = useState(false);
@@ -63,104 +89,459 @@ export default function App() {
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
   const [isDailyCheckInOpen, setIsDailyCheckInOpen] = useState(false);
   const [isDoctorReportOpen, setIsDoctorReportOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Check if daily checkin done today
+  // Clear in-memory sensitive data upon logout
+  const clearLocalAppState = () => {
+    setUserProfile(BLANK_PROFILE);
+    setSymptoms([]);
+    setSleepRecords([]);
+    setMedications([]);
+    setCheckIns([]);
+    setMeasurements([]);
+    setMedicalRecords([]);
+    setDoctorVisits([]);
+    setSafetyAlerts([]);
+    setReports([]);
+    setIsDemoMode(false);
+    setActiveTab('home');
+  };
+
+  // Auth observer & initial per-user cloud hydration
+  useEffect(() => {
+    testConnection();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        setIsDataLoading(true);
+        try {
+          // 1. Fetch user profile from Firestore: users/{uid}/profile/main
+          let profile = await FirestoreService.getUserProfile(user.uid);
+          if (!profile) {
+            // First time login for this Google account: create initial profile
+            profile = {
+              id: user.uid,
+              name: user.displayName || 'You',
+              age: 0,
+              birthDate: '',
+              sex: 'prefer_not_to_say',
+              country: 'US',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+              emergencyPhone: '',
+              conditions: [],
+              userReportedConcerns: [],
+              allergies: [],
+              trackedMetrics: ['energy', 'mood', 'stress', 'temperature', 'blood_pressure', 'heart_rate'],
+              usualSleepSchedule: {
+                bedtime: '23:00',
+                wakeTime: '07:00',
+                targetHours: 8,
+              },
+              isDemoData: false,
+            };
+            await FirestoreService.saveUserProfile(user.uid, profile);
+          }
+          setUserProfile(profile);
+
+          // 2. Fetch all personal cloud collections for this user in parallel
+          const [
+            userSymptoms,
+            userSleep,
+            userMeds,
+            userCheckIns,
+            userMeasurements,
+            userRecords,
+            userVisits,
+            userAlerts,
+            userReports,
+          ] = await Promise.all([
+            FirestoreService.getSymptoms(user.uid),
+            FirestoreService.getSleepRecords(user.uid),
+            FirestoreService.getMedications(user.uid),
+            FirestoreService.getCheckIns(user.uid),
+            FirestoreService.getMeasurements(user.uid),
+            FirestoreService.getMedicalRecords(user.uid),
+            FirestoreService.getDoctorVisits(user.uid),
+            FirestoreService.getSafetyAlerts(user.uid),
+            FirestoreService.getReports(user.uid),
+          ]);
+
+          setSymptoms(userSymptoms || []);
+          setSleepRecords(userSleep || []);
+          setMedications(userMeds || []);
+          setCheckIns(userCheckIns || []);
+          setMeasurements(userMeasurements || []);
+          setMedicalRecords(userRecords || []);
+          setDoctorVisits(userVisits || []);
+          setSafetyAlerts(userAlerts || []);
+          setReports(userReports || []);
+          setIsDemoMode(profile.isDemoData || false);
+        } catch (err) {
+          console.error('Failed to load user records from Firestore:', err);
+        } finally {
+          setIsDataLoading(false);
+        }
+      } else {
+        clearLocalAppState();
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Prompt user with confirmation dialog before logging out
+  const handlePromptSignOut = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  // Confirmed logout: signs out of Firebase/Google and flushes active session memory
+  // IMPORTANT: Does NOT delete or alter any user records in Firestore!
+  const handleConfirmSignOut = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logoutUser();
+      clearLocalAppState();
+      setIsLogoutModalOpen(false);
+    } catch (err) {
+      console.error('Error signing out:', err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // Check if daily checkin done today & today's measurements
   const todayStr = new Date().toISOString().split('T')[0];
   const todayCheckIn = checkIns.find((c) => c.date === todayStr);
+  const todayBPMeasurement = measurements.find(
+    (m) => m.date === todayStr && m.type === 'blood_pressure'
+  );
+  const todayWeightMeasurement = measurements.find(
+    (m) => m.date === todayStr && m.type === 'weight'
+  );
+  const todayTempMeasurement = measurements.find(
+    (m) => m.date === todayStr && m.type === 'temperature'
+  );
 
   // Active (undismissed) safety alerts
   const activeAlert = safetyAlerts.find((a) => !a.dismissed);
 
-  // Handlers for storage updates
-  const handleSaveSymptom = (symptom: SymptomEpisode, newAlert?: SafetyAlert) => {
-    StorageService.addSymptom(symptom);
-    setSymptoms(StorageService.getSymptoms());
+  // Handlers for Firestore updates
+  const handleSaveSymptom = async (symptom: SymptomEpisode, newAlert?: SafetyAlert) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addSymptom(currentUser.uid, symptom);
+      setSymptoms((prev) => [symptom, ...prev.filter((s) => s.id !== symptom.id)]);
 
-    if (newAlert) {
-      StorageService.addSafetyAlert(newAlert);
-      setSafetyAlerts(StorageService.getSafetyAlerts());
+      if (newAlert) {
+        await FirestoreService.addSafetyAlert(currentUser.uid, newAlert);
+        setSafetyAlerts((prev) => [newAlert, ...prev.filter((a) => a.id !== newAlert.id)]);
+      }
+    } catch (err) {
+      console.error('Failed to save symptom:', err);
     }
   };
 
-  const handleUpdateSymptom = (id: string, updates: Partial<SymptomEpisode>) => {
-    StorageService.updateSymptom(id, updates);
-    setSymptoms(StorageService.getSymptoms());
+  const handleUpdateSymptom = async (id: string, updates: Partial<SymptomEpisode>) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.updateSymptom(currentUser.uid, id, updates);
+      setSymptoms((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+    } catch (err) {
+      console.error('Failed to update symptom:', err);
+    }
   };
 
-  const handleSaveSleep = (sleep: SleepRecord) => {
-    StorageService.addSleepRecord(sleep);
-    setSleepRecords(StorageService.getSleepRecords());
+  const handleDeleteSymptom = async (id: string) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.deleteSymptom(currentUser.uid, id);
+      setSymptoms((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error('Failed to delete symptom:', err);
+    }
   };
 
-  const handleSaveMedication = (med: MedicationItem) => {
-    StorageService.addMedication(med);
-    setMedications(StorageService.getMedications());
+  const handleSaveSleep = async (sleep: SleepRecord) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addSleepRecord(currentUser.uid, sleep);
+      setSleepRecords((prev) => [sleep, ...prev.filter((s) => s.id !== sleep.id)]);
+    } catch (err) {
+      console.error('Failed to save sleep record:', err);
+    }
   };
 
-  const handleToggleMedication = (id: string) => {
-    StorageService.toggleMedicationTaken(id);
-    setMedications(StorageService.getMedications());
+  const handleSaveMedication = async (med: MedicationItem) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addMedication(currentUser.uid, med);
+      setMedications((prev) => [med, ...prev.filter((m) => m.id !== med.id)]);
+    } catch (err) {
+      console.error('Failed to save medication:', err);
+    }
   };
 
-  const handleSaveCheckIn = (checkIn: DailyCheckIn) => {
-    StorageService.addCheckIn(checkIn);
-    setCheckIns(StorageService.getCheckIns());
+  const handleToggleMedication = async (id: string) => {
+    if (!currentUser) return;
+    const target = medications.find((m) => m.id === id);
+    if (!target) return;
+    const updatedStatus = !target.takenToday;
+    const timeToday = updatedStatus
+      ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : undefined;
+    try {
+      await FirestoreService.updateMedication(currentUser.uid, id, {
+        takenToday: updatedStatus,
+        timeToday,
+      });
+      setMedications((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, takenToday: updatedStatus, timeToday } : m))
+      );
+    } catch (err) {
+      console.error('Failed to toggle medication:', err);
+    }
   };
 
-  const handleSaveMeasurement = (meas: MeasurementRecord) => {
-    StorageService.addMeasurement(meas);
-    setMeasurements(StorageService.getMeasurements());
+  const handleSaveCheckIn = async (
+    checkIn: DailyCheckIn,
+    vitals?: {
+      systolic?: number;
+      diastolic?: number;
+      weight?: number;
+      temperature?: number;
+    }
+  ) => {
+    if (!currentUser) return;
+    try {
+      // 1. Save daily check-in to Firestore & React state
+      await FirestoreService.addCheckIn(currentUser.uid, checkIn);
+      setCheckIns((prev) => [checkIn, ...prev.filter((c) => c.id !== checkIn.id)]);
+
+      // 2. Persist Vitals to the measurements collection (Single source of truth for Analytics/Trends/Timeline)
+      const newMeasurements: MeasurementRecord[] = [];
+
+      // Blood Pressure
+      if (vitals?.systolic !== undefined && vitals?.diastolic !== undefined) {
+        const existingBP = measurements.find(
+          (m) => m.date === checkIn.date && m.type === 'blood_pressure'
+        );
+        const bpRecord: MeasurementRecord = {
+          id: existingBP?.id || `meas-bp-${checkIn.date}`,
+          date: checkIn.date,
+          timestamp: new Date().toISOString(),
+          type: 'blood_pressure',
+          value: `${vitals.systolic}/${vitals.diastolic}`,
+          unit: 'mmHg',
+          notes: 'Daily check-in blood pressure reading',
+        };
+        await FirestoreService.addMeasurement(currentUser.uid, bpRecord);
+        newMeasurements.push(bpRecord);
+      }
+
+      // Weight
+      if (vitals?.weight !== undefined) {
+        const existingWeight = measurements.find(
+          (m) => m.date === checkIn.date && m.type === 'weight'
+        );
+        const weightRecord: MeasurementRecord = {
+          id: existingWeight?.id || `meas-wt-${checkIn.date}`,
+          date: checkIn.date,
+          timestamp: new Date().toISOString(),
+          type: 'weight',
+          value: vitals.weight,
+          unit: 'kg',
+          notes: 'Daily check-in body weight reading',
+        };
+        await FirestoreService.addMeasurement(currentUser.uid, weightRecord);
+        newMeasurements.push(weightRecord);
+      }
+
+      // Temperature
+      if (vitals?.temperature !== undefined) {
+        const existingTemp = measurements.find(
+          (m) => m.date === checkIn.date && m.type === 'temperature'
+        );
+        const tempRecord: MeasurementRecord = {
+          id: existingTemp?.id || `meas-temp-${checkIn.date}`,
+          date: checkIn.date,
+          timestamp: new Date().toISOString(),
+          type: 'temperature',
+          value: vitals.temperature,
+          unit: '°C',
+          notes: 'Daily check-in body temperature reading',
+        };
+        await FirestoreService.addMeasurement(currentUser.uid, tempRecord);
+        newMeasurements.push(tempRecord);
+      }
+
+      // 3. Update React measurements state atomically without creating duplicates for today
+      // and without touching prior days' measurements
+      if (newMeasurements.length > 0) {
+        setMeasurements((prev) => {
+          const updatedKeys = new Set(newMeasurements.map((m) => `${m.date}_${m.type}`));
+          const remaining = prev.filter((m) => !updatedKeys.has(`${m.date}_${m.type}`));
+          return [...newMeasurements, ...remaining];
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save checkin and measurements:', err);
+    }
   };
 
-  const handleAddMedicalRecord = (rec: MedicalRecordItem) => {
-    StorageService.addMedicalRecord(rec);
-    setMedicalRecords(StorageService.getMedicalRecords());
+  const handleSaveMeasurement = async (meas: MeasurementRecord) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addMeasurement(currentUser.uid, meas);
+      setMeasurements((prev) => [meas, ...prev.filter((m) => m.id !== meas.id)]);
+    } catch (err) {
+      console.error('Failed to save measurement:', err);
+    }
   };
 
-  const handleAddDoctorVisit = (visit: DoctorVisit) => {
-    StorageService.addDoctorVisit(visit);
-    setDoctorVisits(StorageService.getDoctorVisits());
+  const handleAddMedicalRecord = async (rec: MedicalRecordItem) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addMedicalRecord(currentUser.uid, rec);
+      setMedicalRecords((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
+    } catch (err) {
+      console.error('Failed to save medical record:', err);
+    }
   };
 
-  const handleDismissSafetyAlert = (id: string) => {
-    StorageService.dismissSafetyAlert(id);
-    setSafetyAlerts(StorageService.getSafetyAlerts());
+  const handleAddDoctorVisit = async (visit: DoctorVisit) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.addDoctorVisit(currentUser.uid, visit);
+      setDoctorVisits((prev) => [visit, ...prev.filter((v) => v.id !== visit.id)]);
+    } catch (err) {
+      console.error('Failed to save doctor visit:', err);
+    }
   };
 
-  const handleSaveProfile = (updated: UserProfile) => {
-    StorageService.saveUserProfile(updated);
-    setUserProfile(updated);
+  const handleDismissSafetyAlert = async (id: string) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.dismissSafetyAlert(currentUser.uid, id);
+      setSafetyAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, dismissed: true } : a)));
+    } catch (err) {
+      console.error('Failed to dismiss safety alert:', err);
+    }
   };
 
-  const handleResetDemoData = () => {
-    StorageService.seedInitialData(true);
-    setUserProfile(StorageService.getUserProfile());
-    setSymptoms(StorageService.getSymptoms());
-    setSleepRecords(StorageService.getSleepRecords());
-    setMedications(StorageService.getMedications());
-    setCheckIns(StorageService.getCheckIns());
-    setMeasurements(StorageService.getMeasurements());
-    setMedicalRecords(StorageService.getMedicalRecords());
-    setDoctorVisits(StorageService.getDoctorVisits());
-    setSafetyAlerts(StorageService.getSafetyAlerts());
-    setReports(StorageService.getReports());
-    setIsDemoMode(true);
+  const handleSaveProfile = async (updated: UserProfile) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.saveUserProfile(currentUser.uid, updated);
+      setUserProfile(updated);
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+    }
   };
 
-  const handleClearAllData = () => {
-    if (window.confirm('Are you sure you want to delete all stored health data? This cannot be undone.')) {
-      StorageService.clearAllData();
-      setUserProfile(StorageService.getUserProfile());
-      setSymptoms([]);
-      setSleepRecords([]);
-      setMedications([]);
-      setCheckIns([]);
-      setMeasurements([]);
-      setMedicalRecords([]);
-      setDoctorVisits([]);
-      setSafetyAlerts([]);
-      setReports([]);
-      setIsDemoMode(false);
+  const handleSaveReport = async (newReport: DoctorReport) => {
+    if (!currentUser) return;
+    try {
+      await FirestoreService.saveReport(currentUser.uid, newReport);
+      setReports((prev) => [newReport, ...prev.filter((r) => r.id !== newReport.id)]);
+    } catch (err) {
+      console.error('Failed to save doctor report:', err);
+    }
+  };
+
+  const handleResetDemoData = async () => {
+    if (!currentUser) return;
+    try {
+      // Seed sample demonstration data into the user's personal cloud partition
+      const demoProfile = { ...DEMO_USER_PROFILE, id: currentUser.uid, isDemoData: true };
+      await FirestoreService.saveUserProfile(currentUser.uid, demoProfile);
+      setUserProfile(demoProfile);
+
+      // Seed sample symptoms
+      for (const s of DEMO_SYMPTOMS) {
+        await FirestoreService.addSymptom(currentUser.uid, s);
+      }
+      setSymptoms(DEMO_SYMPTOMS);
+
+      // Seed sample sleep
+      for (const sl of DEMO_SLEEP_RECORDS) {
+        await FirestoreService.addSleepRecord(currentUser.uid, sl);
+      }
+      setSleepRecords(DEMO_SLEEP_RECORDS);
+
+      // Seed sample medications
+      for (const m of DEMO_MEDICATIONS) {
+        await FirestoreService.addMedication(currentUser.uid, m);
+      }
+      setMedications(DEMO_MEDICATIONS);
+
+      // Seed checkins, measurements, visits, records
+      for (const c of DEMO_DAILY_CHECKINS) {
+        await FirestoreService.addCheckIn(currentUser.uid, c);
+      }
+      setCheckIns(DEMO_DAILY_CHECKINS);
+
+      for (const ms of DEMO_MEASUREMENTS) {
+        await FirestoreService.addMeasurement(currentUser.uid, ms);
+      }
+      setMeasurements(DEMO_MEASUREMENTS);
+
+      for (const rec of DEMO_MEDICAL_RECORDS) {
+        await FirestoreService.addMedicalRecord(currentUser.uid, rec);
+      }
+      setMedicalRecords(DEMO_MEDICAL_RECORDS);
+
+      for (const v of DEMO_DOCTOR_VISITS) {
+        await FirestoreService.addDoctorVisit(currentUser.uid, v);
+      }
+      setDoctorVisits(DEMO_DOCTOR_VISITS);
+
+      for (const a of DEMO_SAFETY_ALERTS) {
+        await FirestoreService.addSafetyAlert(currentUser.uid, a);
+      }
+      setSafetyAlerts(DEMO_SAFETY_ALERTS);
+
+      await FirestoreService.saveReport(currentUser.uid, DEMO_DOCTOR_REPORT);
+      setReports([DEMO_DOCTOR_REPORT]);
+
+      setIsDemoMode(true);
+    } catch (err) {
+      console.error('Failed to seed sample data to cloud:', err);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    if (!currentUser) return;
+    if (window.confirm('Are you sure you want to delete all stored health records from your cloud account? This cannot be undone.')) {
+      try {
+        for (const s of symptoms) {
+          await FirestoreService.deleteSymptom(currentUser.uid, s.id);
+        }
+        for (const m of medications) {
+          await FirestoreService.deleteMedication(currentUser.uid, m.id);
+        }
+        const freshProfile = {
+          ...BLANK_PROFILE,
+          id: currentUser.uid,
+          name: currentUser.displayName || 'You',
+        };
+        await FirestoreService.saveUserProfile(currentUser.uid, freshProfile);
+        setUserProfile(freshProfile);
+        setSymptoms([]);
+        setSleepRecords([]);
+        setMedications([]);
+        setCheckIns([]);
+        setMeasurements([]);
+        setMedicalRecords([]);
+        setDoctorVisits([]);
+        setSafetyAlerts([]);
+        setReports([]);
+        setIsDemoMode(false);
+      } catch (err) {
+        console.error('Failed to clear data:', err);
+      }
     }
   };
 
@@ -170,9 +551,38 @@ export default function App() {
     setIsSymptomIntakeOpen(true);
   };
 
+  // 1. Loading Authentication State
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-800 p-4 font-sans">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mb-3" />
+        <h2 className="text-sm font-semibold text-slate-900">Ishara</h2>
+        <p className="text-xs text-slate-400 mt-1">Connecting to your journal...</p>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated: Show Continue with Google Sign-in Screen
+  if (!currentUser) {
+    return <LoginScreen />;
+  }
+
+  // 3. Authenticated but fetching cloud records
+  if (isDataLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-800 p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 mb-4" />
+        <h2 className="text-base font-semibold text-slate-900">Loading Your Health Records</h2>
+        <p className="text-xs text-slate-500 mt-1">
+          Retrieving encrypted cloud records for {currentUser.email}...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans">
-      {/* Top Application Header */}
+      {/* Top Application Header with User Info and Secure Sign Out */}
       <Header
         profile={userProfile}
         isDemoMode={isDemoMode}
@@ -181,6 +591,8 @@ export default function App() {
         onOpenDailyCheckIn={() => setIsDailyCheckInOpen(true)}
         onNavigateToTab={setActiveTab}
         checkInDoneToday={!!todayCheckIn}
+        userEmail={currentUser.email}
+        onSignOut={handlePromptSignOut}
       />
 
       {/* Desktop Sub-navigation Tab Bar */}
@@ -188,11 +600,11 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <nav className="flex space-x-6">
             {[
-              { id: 'home', label: 'Home Dashboard' },
+              { id: 'home', label: 'Home' },
               { id: 'symptoms', label: `Symptoms (${symptoms.length})` },
               { id: 'sleep', label: 'Sleep Journal' },
               { id: 'timeline', label: 'Health Timeline' },
-              { id: 'trends', label: 'Trends & Analytics' },
+              { id: 'trends', label: 'Trends & Patterns' },
               { id: 'doctor_visit', label: 'Doctor Visit Mode' },
               { id: 'records', label: 'Medical Records' },
               { id: 'profile', label: 'Profile & Settings' },
@@ -303,6 +715,8 @@ export default function App() {
             onSaveProfile={handleSaveProfile}
             onResetDemoData={handleResetDemoData}
             onClearAllData={handleClearAllData}
+            userEmail={currentUser.email}
+            onSignOut={handlePromptSignOut}
           />
         )}
       </main>
@@ -347,6 +761,11 @@ export default function App() {
         onClose={() => setIsDailyCheckInOpen(false)}
         onSaveCheckIn={handleSaveCheckIn}
         existingCheckIn={todayCheckIn}
+        todayMeasurements={{
+          bloodPressure: todayBPMeasurement,
+          weight: todayWeightMeasurement,
+          temperature: todayTempMeasurement,
+        }}
       />
 
       {/* MODAL 4: Doctor Report (Major Feature) */}
@@ -361,10 +780,17 @@ export default function App() {
         medications={medications}
         measurements={measurements}
         safetyAlerts={safetyAlerts}
-        onReportGenerated={(newRep) => {
-          StorageService.addReport(newRep);
-          setReports(StorageService.getReports());
-        }}
+        onReportGenerated={handleSaveReport}
+      />
+
+      {/* MODAL 5: Clean Logout Confirmation */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={handleConfirmSignOut}
+        userEmail={currentUser.email}
+        userName={userProfile?.name || currentUser.displayName}
+        isLoggingOut={isLoggingOut}
       />
     </div>
   );

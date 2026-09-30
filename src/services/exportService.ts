@@ -9,8 +9,8 @@ export const ExportService = {
   /**
    * Export all user health data as structured JSON file
    */
-  exportJSON(): void {
-    const data = {
+  exportJSON(customData?: any): void {
+    const data = customData || {
       app: 'Ishara',
       exportDate: new Date().toISOString(),
       disclaimer: 'Personal health record export for patient and clinical reference. Ishara is an informational journal and does not provide medical diagnoses or prescriptions.',
@@ -42,11 +42,16 @@ export const ExportService = {
   /**
    * Export structured health data as CSV files (Symptoms & Vitals)
    */
-  exportCSV(): void {
-    const symptoms = StorageService.getSymptoms();
-    const sleep = StorageService.getSleepRecords();
-    const measurements = StorageService.getMeasurements();
-    const profile = StorageService.getUserProfile();
+  exportCSV(customData?: {
+    symptoms?: any[];
+    sleep?: any[];
+    measurements?: any[];
+    profile?: any;
+  }): void {
+    const symptoms = customData?.symptoms || StorageService.getSymptoms();
+    const sleep = customData?.sleep || StorageService.getSleepRecords();
+    const measurements = customData?.measurements || StorageService.getMeasurements();
+    const profile = customData?.profile || StorageService.getUserProfile();
 
     const escapeCSV = (val: any): string => {
       if (val === null || val === undefined) return '""';

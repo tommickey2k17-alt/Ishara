@@ -525,11 +525,11 @@ export const DEMO_DOCTOR_REPORT: DoctorReport = {
   symptomTrajectory: 'improving',
   trajectoryNotes: 'Frequency and peak severity show mild downward trajectory over the last 3 weeks in temporal tandem with earlier sleep schedules.',
   patientSummary: {
-    name: 'Rohan Sharma',
-    age: 38,
+    name: DEMO_USER_PROFILE.name,
+    age: DEMO_USER_PROFILE.age,
     sex: 'Male',
     bloodGroup: 'B Positive',
-    country: 'India',
+    country: DEMO_USER_PROFILE.country,
   },
   primaryConcerns: [
     'Recurrent frontal and temple headaches (6 logged episodes)',

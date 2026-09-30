@@ -380,7 +380,7 @@ export const QuickLogModal: React.FC<Props> = ({
               activeTab === 'fast_symptom' ? 'bg-white text-teal-800 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            ⚡ Fast &lt;10s
+            ⚡ Quick Tap
           </button>
           <button
             onClick={() => setActiveTab('natural_voice')}
@@ -388,7 +388,7 @@ export const QuickLogModal: React.FC<Props> = ({
               activeTab === 'natural_voice' ? 'bg-white text-teal-800 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            🎙️ Voice / Text
+            🎙️ Talk or Type
           </button>
           <button
             onClick={() => setActiveTab('sleep')}
@@ -404,7 +404,7 @@ export const QuickLogModal: React.FC<Props> = ({
               activeTab === 'vitals' ? 'bg-white text-teal-800 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📊 Vitals
+            📊 Health Numbers
           </button>
           <button
             onClick={() => setActiveTab('medication')}
@@ -412,7 +412,7 @@ export const QuickLogModal: React.FC<Props> = ({
               activeTab === 'medication' ? 'bg-white text-teal-800 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            💊 Med
+            💊 Medicine
           </button>
         </div>
 
@@ -423,10 +423,10 @@ export const QuickLogModal: React.FC<Props> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  1. Select Symptom:
+                  1. What are you feeling?
                 </span>
                 <span className="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded font-medium">
-                  One-tap speed
+                  Takes 10 seconds
                 </span>
               </div>
 
@@ -458,7 +458,7 @@ export const QuickLogModal: React.FC<Props> = ({
               <div>
                 <input
                   type="text"
-                  placeholder="Or enter custom symptom..."
+                  placeholder="Or type any symptom..."
                   value={customSymptom}
                   onChange={(e) => {
                     setCustomSymptom(e.target.value);
@@ -471,7 +471,7 @@ export const QuickLogModal: React.FC<Props> = ({
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-700 uppercase tracking-wider">
-                    2. Severity:
+                    2. How strong is it right now?
                   </span>
                   <span className="font-bold text-teal-700 text-sm">{fastSeverity}/10</span>
                 </div>
@@ -487,8 +487,8 @@ export const QuickLogModal: React.FC<Props> = ({
                   {[
                     { label: 'Mild (3)', val: 3 },
                     { label: 'Moderate (5)', val: 5 },
-                    { label: 'Severe (7)', val: 7 },
-                    { label: 'Very Severe (9)', val: 9 },
+                    { label: 'Strong (7)', val: 7 },
+                    { label: 'Very intense (9)', val: 9 },
                   ].map((p) => (
                     <button
                       key={p.val}
@@ -507,22 +507,22 @@ export const QuickLogModal: React.FC<Props> = ({
               {/* 3. Onset & Fever Tri-state */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">When started?</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">When did it start?</label>
                   <select
                     value={fastOnset}
                     onChange={(e) => setFastOnset(e.target.value)}
                     className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Just now (< 1h)">Just now (&lt; 1h)</option>
-                    <option value="Today morning">Today morning</option>
+                    <option value="Today morning">This morning</option>
                     <option value="Yesterday">Yesterday</option>
                     <option value="2-3 days ago">2-3 days ago</option>
-                    <option value="Over 1 week">Over 1 week</option>
+                    <option value="Over 1 week">Over 1 week ago</option>
                   </select>
                 </div>
                 <div>
                   <TriStateSelector
-                    label="Fever reported?"
+                    label="Did you have a fever?"
                     value={fastFever}
                     onChange={setFastFever}
                     size="sm"
@@ -539,7 +539,7 @@ export const QuickLogModal: React.FC<Props> = ({
                   className="w-full py-3 bg-teal-600 hover:bg-teal-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-teal-600/20"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Save {customSymptom.trim() || selectedSymptom} to Journal (&lt; 10s)</span>
+                  <span>Save {customSymptom.trim() || selectedSymptom} to Journal</span>
                 </button>
 
                 <button
@@ -556,7 +556,7 @@ export const QuickLogModal: React.FC<Props> = ({
                   }}
                   className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>Need more clinical depth? Open Progressive Intake</span>
+                  <span>Want to add more details? Answer a few guided questions</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -569,9 +569,9 @@ export const QuickLogModal: React.FC<Props> = ({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">
-                    Speak or Type in Your Own Words:
+                    Talk or type in your own words:
                   </label>
-                  <span className="text-[11px] text-slate-500">AI structuring</span>
+                  <span className="text-[11px] text-slate-500">Smart organize</span>
                 </div>
 
                 <div className="relative">
@@ -639,12 +639,12 @@ export const QuickLogModal: React.FC<Props> = ({
                 {isParsingNl ? (
                   <>
                     <Sparkles className="w-4 h-4 animate-spin" />
-                    <span>Extracting Structured Health Information...</span>
+                    <span>Organizing your notes...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Extract & Review Structured Fields</span>
+                    <span>Organize & Review Details</span>
                   </>
                 )}
               </button>
@@ -656,14 +656,14 @@ export const QuickLogModal: React.FC<Props> = ({
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-teal-600" />
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                        Explicit Verification Before Saving
+                        Check and Confirm
                       </span>
                     </div>
                     <DataProvenanceBadge type="user_fact" />
                   </div>
 
                   <p className="text-[11px] text-slate-600">
-                    Verify the extracted fields below. You can adjust any values before confirming.
+                    Take a quick look to make sure everything looks right. You can adjust anything before saving.
                   </p>
 
                   {/* Unconfirmed user concern flag if detected */}
@@ -671,10 +671,10 @@ export const QuickLogModal: React.FC<Props> = ({
                     <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs text-amber-900">
                       <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold">Unconfirmed User Concern: </span>
+                        <span className="font-bold">What you wondered about: </span>
                         <span>{confirmSuspicion}</span>
                         <p className="text-[10px] text-amber-700 mt-0.5">
-                          Stored for physician review. Ishara never converts suspicion into a diagnosis.
+                          Saved for your doctor to review. Never treated as an official diagnosis.
                         </p>
                       </div>
                     </div>
@@ -693,7 +693,7 @@ export const QuickLogModal: React.FC<Props> = ({
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">
-                        Severity (0-10): <span className="text-teal-700 font-bold">{confirmSeverity}</span>
+                        Strength (0-10): <span className="text-teal-700 font-bold">{confirmSeverity}</span>
                       </label>
                       <input
                         type="range"
@@ -705,7 +705,7 @@ export const QuickLogModal: React.FC<Props> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Onset / Timing</label>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">When it started</label>
                       <input
                         type="text"
                         value={confirmTiming}
@@ -714,7 +714,7 @@ export const QuickLogModal: React.FC<Props> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Location</label>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-0.5">Where you feel it</label>
                       <input
                         type="text"
                         value={confirmLocation}
@@ -728,17 +728,17 @@ export const QuickLogModal: React.FC<Props> = ({
                   {/* Clinical Tri-states */}
                   <div className="border-t border-slate-200 pt-2 space-y-2">
                     <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
-                      Clinical Tri-State Questions (Yes / No / Not Recorded):
+                      Helpful quick checks:
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <TriStateSelector
-                        label="Fever reported?"
+                        label="Did you have a fever?"
                         value={confirmFever}
-                        onChange={setConfirmFever}
+                        onChange={setFastFever}
                         size="sm"
                       />
                       <TriStateSelector
-                        label="Happened before?"
+                        label="Have you felt this before?"
                         value={confirmPrior}
                         onChange={setConfirmPrior}
                         size="sm"
@@ -754,7 +754,7 @@ export const QuickLogModal: React.FC<Props> = ({
                       className="flex-1 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Confirm & Save Symptom</span>
+                      <span>Confirm & Save</span>
                     </button>
                     <button
                       type="button"
@@ -772,7 +772,7 @@ export const QuickLogModal: React.FC<Props> = ({
                       }}
                       className="py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold cursor-pointer"
                     >
-                      Open Intake Assistant
+                      Add More Details
                     </button>
                   </div>
                 </div>
@@ -805,27 +805,32 @@ export const QuickLogModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Sleep Quality</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(['poor', 'okay', 'good', 'excellent'] as const).map((q) => (
+                <label className="block font-semibold text-slate-700 mb-1">How well did you sleep?</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    { id: 'poor', label: 'Broken / Restless' },
+                    { id: 'okay', label: 'Fair' },
+                    { id: 'good', label: 'Good' },
+                    { id: 'excellent', label: 'Deep & Restful' },
+                  ].map((q) => (
                     <button
-                      key={q}
+                      key={q.id}
                       type="button"
-                      onClick={() => setSleepQuality(q)}
-                      className={`py-2 px-1 text-center rounded-lg border text-xs capitalize transition-colors cursor-pointer ${
-                        sleepQuality === q
+                      onClick={() => setSleepQuality(q.id as any)}
+                      className={`py-2 px-1 text-center rounded-lg border text-xs transition-colors cursor-pointer ${
+                        sleepQuality === q.id
                           ? 'bg-teal-600 text-white border-teal-600 font-semibold'
                           : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      {q}
+                      {q.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Notes (Optional)</label>
+                <label className="block font-semibold text-slate-700 mb-1">Notes (optional)</label>
                 <input
                   type="text"
                   value={sleepNotes}
@@ -840,7 +845,7 @@ export const QuickLogModal: React.FC<Props> = ({
                 onClick={handleSaveSleepForm}
                 className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
-                Save Sleep Record
+                Save Sleep
               </button>
             </div>
           )}
@@ -849,7 +854,7 @@ export const QuickLogModal: React.FC<Props> = ({
           {activeTab === 'vitals' && (
             <div className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Measurement Type</label>
+                <label className="block font-semibold text-slate-700 mb-1">What are you measuring?</label>
                 <select
                   value={vitalType}
                   onChange={(e) => {
@@ -867,12 +872,12 @@ export const QuickLogModal: React.FC<Props> = ({
                   <option value="heart_rate">Heart Rate (bpm)</option>
                   <option value="weight">Body Weight (kg)</option>
                   <option value="temperature">Body Temperature (°C)</option>
-                  <option value="hydration">Hydration (Glasses)</option>
+                  <option value="hydration">Water / Hydration (Glasses)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Value</label>
+                <label className="block font-semibold text-slate-700 mb-1">Measurement reading</label>
                 <input
                   type="text"
                   value={vitalValue}
@@ -882,7 +887,7 @@ export const QuickLogModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Context Notes</label>
+                <label className="block font-semibold text-slate-700 mb-1">Notes (optional)</label>
                 <input
                   type="text"
                   value={vitalNotes}
@@ -906,7 +911,7 @@ export const QuickLogModal: React.FC<Props> = ({
           {activeTab === 'medication' && (
             <div className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Medication Name</label>
+                <label className="block font-semibold text-slate-700 mb-1">Medicine or supplement name</label>
                 <input
                   type="text"
                   value={medName}
@@ -918,7 +923,7 @@ export const QuickLogModal: React.FC<Props> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Dosage</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Dose (amount)</label>
                   <input
                     type="text"
                     value={medDosage}
@@ -928,12 +933,12 @@ export const QuickLogModal: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Frequency</label>
+                  <label className="block font-semibold text-slate-700 mb-1">How often you take it</label>
                   <input
                     type="text"
                     value={medFrequency}
                     onChange={(e) => setMedFrequency(e.target.value)}
-                    placeholder="e.g. PRN as needed"
+                    placeholder="e.g. Once daily, As needed"
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs"
                   />
                 </div>
@@ -945,7 +950,7 @@ export const QuickLogModal: React.FC<Props> = ({
                 disabled={!medName.trim()}
                 className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
-                Save Medication Record
+                Save Medicine
               </button>
             </div>
           )}

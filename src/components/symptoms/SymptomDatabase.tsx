@@ -20,6 +20,7 @@ import {
 import { SymptomEpisode } from '../../types';
 import { TriStateBadge } from '../common/TriStateBadge';
 import { DataProvenanceBadge } from '../common/DataProvenanceBadge';
+import { formatSymptomFrequency } from '../../utils/plainLanguage';
 
 interface Props {
   symptoms: SymptomEpisode[];
@@ -70,9 +71,9 @@ export const SymptomDatabase: React.FC<Props> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Symptom Database & History</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Your Symptoms & History</h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Chronological records of all reported symptom episodes and clinical characteristics
+            A complete record of how you've been feeling, what symptoms you had, and what helped
           </p>
         </div>
         <button
@@ -87,7 +88,7 @@ export const SymptomDatabase: React.FC<Props> = ({
       {/* Symptom Name Quick-Select Filter Tabs */}
       <div className="space-y-2">
         <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-          Filter by Symptom History:
+          Filter by symptom:
         </span>
         <div className="flex flex-wrap gap-1.5">
           <button
@@ -141,15 +142,20 @@ export const SymptomDatabase: React.FC<Props> = ({
         </div>
 
         <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-semibold self-start sm:self-auto">
-          {(['all', 'active', 'resolved', 'recurring'] as const).map((f) => (
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'active', label: 'Ongoing' },
+            { id: 'resolved', label: 'Cleared up' },
+            { id: 'recurring', label: 'Recurring' },
+          ].map((f) => (
             <button
-              key={f}
-              onClick={() => setSelectedFilter(f)}
+              key={f.id}
+              onClick={() => setSelectedFilter(f.id as any)}
               className={`px-3 py-1.5 rounded-md capitalize transition-colors cursor-pointer ${
-                selectedFilter === f ? 'bg-teal-50 text-teal-800' : 'text-slate-600 hover:text-slate-900'
+                selectedFilter === f.id ? 'bg-teal-50 text-teal-800' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {f}
+              {f.label}
             </button>
           ))}
         </div>
@@ -180,15 +186,15 @@ export const SymptomDatabase: React.FC<Props> = ({
                       </span>
                       {symp.isResolved ? (
                         <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
-                          Resolved
+                          Cleared up
                         </span>
                       ) : (
                         <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
-                          Active Episode
+                          Ongoing
                         </span>
                       )}
                       {symp.isRecurring && (
-                        <span className="text-[11px] text-slate-500 font-medium">· Recurring</span>
+                        <span className="text-[11px] text-slate-500 font-medium">· Happened before</span>
                       )}
                     </div>
 
@@ -200,19 +206,19 @@ export const SymptomDatabase: React.FC<Props> = ({
                       {symp.duration && (
                         <>
                           <span aria-hidden="true">·</span>
-                          <span>Duration: {symp.duration}</span>
+                          <span>Lasted: {symp.duration}</span>
                         </>
                       )}
                       {symp.location && (
                         <>
                           <span aria-hidden="true">·</span>
-                          <span>Location: {symp.location}</span>
+                          <span>Where it hurt: {symp.location}</span>
                         </>
                       )}
                     </div>
 
                     <p className="text-xs text-slate-700 line-clamp-1 pt-1">
-                      {symp.characterDescription || 'No character description recorded.'}
+                      {symp.characterDescription || 'No description added.'}
                     </p>
                   </div>
 
@@ -232,57 +238,57 @@ export const SymptomDatabase: React.FC<Props> = ({
                   <div className="px-4 sm:px-5 pb-5 pt-2 border-t border-slate-100 bg-slate-50/60 space-y-3.5 text-xs text-slate-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Frequency & Pattern:</strong>
-                        <span className="capitalize">{symp.frequency}</span>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">How often it happened:</strong>
+                        <span>{formatSymptomFrequency(symp.frequency)}</span>
                       </div>
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Character:</strong>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">What it felt like:</strong>
                         <span>{symp.characterDescription || '—'}</span>
                       </div>
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Associated Symptoms:</strong>
-                        <span>{symp.associatedSymptoms?.length ? symp.associatedSymptoms.join(', ') : 'None recorded'}</span>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">Other symptoms you noticed:</strong>
+                        <span>{symp.associatedSymptoms?.length ? symp.associatedSymptoms.join(', ') : 'No other symptoms were recorded'}</span>
                       </div>
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Relieving Factors:</strong>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">What helped:</strong>
                         <span>{symp.relievingFactors?.length ? symp.relievingFactors.join(', ') : 'None recorded'}</span>
                       </div>
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Triggers / Context:</strong>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">Possible triggers or context:</strong>
                         <span>{symp.triggers?.length ? symp.triggers.join(', ') : (symp.contextNotes || '—')}</span>
                       </div>
                       <div>
-                        <strong className="block text-slate-500 font-semibold mb-0.5">Medical Evaluation:</strong>
+                        <strong className="block text-slate-500 font-semibold mb-0.5">Checked by a doctor:</strong>
                         <div className="pt-0.5">
                           <TriStateBadge
                             state={symp.medicallyEvaluatedState || (symp.medicallyEvaluated ? 'yes' : 'no')}
-                            label="Doctor Evaluated"
+                            label="Doctor checked"
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Clinical Tri-State Row */}
+                    {/* Specific Questions Checked */}
                     <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-[11px] text-slate-700 uppercase tracking-wider">
-                          Clinical Question Statuses
+                          Helpful Details Checked
                         </span>
                         <span className="text-[10px] text-slate-400">
-                          (Not Recorded = Not Asked or Unknown)
+                          (Not recorded = not asked or left blank)
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-0.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Fever:</span>
+                          <span className="text-slate-500">Had a fever:</span>
                           <TriStateBadge state={symp.feverReported} label="Fever" />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Prior Occurrence:</span>
-                          <TriStateBadge state={symp.priorOccurrenceState} label="Prior History" />
+                          <span className="text-slate-500">Had this before:</span>
+                          <TriStateBadge state={symp.priorOccurrenceState} label="Before" />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Worsening:</span>
+                          <span className="text-slate-500">Getting worse:</span>
                           <TriStateBadge state={symp.worseningProgressionState} label="Worsening" />
                         </div>
                       </div>
@@ -293,10 +299,10 @@ export const SymptomDatabase: React.FC<Props> = ({
                       <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-950 flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="block text-amber-900 font-semibold">Unconfirmed User Concern:</strong>
+                          <strong className="block text-amber-900 font-semibold">What you wondered about:</strong>
                           <p className="mt-0.5">{symp.userSuspicionOrConcern}</p>
                           <span className="text-[10px] text-amber-800/80 block mt-1">
-                            Stored as user-reported suspicion; not a medical diagnosis.
+                            Saved as your personal note for your doctor; not a doctor diagnosis.
                           </span>
                         </div>
                       </div>
@@ -304,7 +310,7 @@ export const SymptomDatabase: React.FC<Props> = ({
 
                     {symp.userNotes && (
                       <div className="p-3 bg-white rounded-xl border border-slate-200">
-                        <strong className="block text-slate-500 font-semibold mb-1">User Notes:</strong>
+                        <strong className="block text-slate-500 font-semibold mb-1">Your extra notes:</strong>
                         <p className="italic text-slate-800">{symp.userNotes}</p>
                       </div>
                     )}
@@ -313,8 +319,8 @@ export const SymptomDatabase: React.FC<Props> = ({
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong>Safety Prompt Acknowledged: </strong>
-                          {symp.safetyNotes || 'Prompted clinical review due to severity criteria.'}
+                          <strong>Health check note: </strong>
+                          {symp.safetyNotes || 'We suggested checking in with a doctor because of the severity.'}
                         </div>
                       </div>
                     )}
@@ -330,7 +336,7 @@ export const SymptomDatabase: React.FC<Props> = ({
                               : 'bg-emerald-600 text-white hover:bg-emerald-700'
                           }`}
                         >
-                          {symp.isResolved ? 'Re-open Episode' : 'Mark as Resolved'}
+                          {symp.isResolved ? 'Mark as still ongoing' : 'Mark as cleared up'}
                         </button>
                       </div>
 
@@ -338,7 +344,7 @@ export const SymptomDatabase: React.FC<Props> = ({
                         onClick={() => onOpenSymptomIntake(symp.symptomName)}
                         className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 font-semibold rounded-lg text-xs border border-teal-200 cursor-pointer"
                       >
-                        + Log New Episode of {symp.symptomName}
+                        + Log {symp.symptomName} again
                       </button>
                     </div>
                   </div>

@@ -136,7 +136,7 @@ export const AIService = {
       return {
         isComplete: false,
         nextQuestion: `When did your ${symptomName.toLowerCase()} begin?`,
-        whyWeAsk: 'Helps determine symptom onset and clinical timeline.',
+        whyWeAsk: 'Helps build an accurate timeline of when this started.',
         inputType: 'options',
         quickSuggestions: ['Just now (< 1 hr)', 'Earlier this morning', 'Yesterday', 'A few days ago'],
         extractedSummary: updatedDraft,
@@ -147,10 +147,10 @@ export const AIService = {
     if (stepCount === 1) {
       return {
         isComplete: false,
-        nextQuestion: 'How severe is it right now on a scale of 0 to 10?',
-        whyWeAsk: 'Standardized clinical severity metric for monitoring progress.',
+        nextQuestion: 'How strong is it right now on a scale of 0 to 10?',
+        whyWeAsk: 'Helps track whether your symptoms are improving, staying steady, or getting stronger.',
         inputType: 'severity_slider',
-        quickSuggestions: ['Mild (2-3)', 'Moderate (5)', 'Severe (7-8)', 'Very Severe (9-10)'],
+        quickSuggestions: ['Mild (2-3)', 'Moderate (5)', 'Strong (7-8)', 'Very strong (9-10)'],
         extractedSummary: updatedDraft,
       };
     }
@@ -160,7 +160,7 @@ export const AIService = {
       return {
         isComplete: false,
         nextQuestion: 'Is it constant, or does it come and go?',
-        whyWeAsk: 'Differentiates continuous vs episodic symptom patterns.',
+        whyWeAsk: 'Helps understand how often it happens throughout the day.',
         inputType: 'options',
         quickSuggestions: ['Constant without pause', 'Comes and goes in waves', 'Throbbing pulses', 'Only with movement'],
         extractedSummary: updatedDraft,
@@ -172,9 +172,9 @@ export const AIService = {
       return {
         isComplete: false,
         nextQuestion: 'Where specifically do you feel it?',
-        whyWeAsk: 'Anatomical location helps clarify focal vs generalized symptoms.',
+        whyWeAsk: 'Helps your doctor pinpoint the exact area where you are feeling this.',
         inputType: 'text',
-        quickSuggestions: ['Forehead / temples', 'Back of head / neck', 'One side only', 'Generalized'],
+        quickSuggestions: ['Forehead / temples', 'Back of head / neck', 'One side only', 'Everywhere / all over'],
         extractedSummary: updatedDraft,
       };
     }
@@ -183,10 +183,10 @@ export const AIService = {
     if (stepCount === 4) {
       return {
         isComplete: false,
-        nextQuestion: 'Any associated symptoms, or anything that makes it noticeably better or worse?',
-        whyWeAsk: 'Provides key clinical context regarding triggers and relieving measures.',
+        nextQuestion: 'Have you noticed any other symptoms, or anything that makes it feel better or worse?',
+        whyWeAsk: 'Helps your doctor see possible triggers and what gives you relief.',
         inputType: 'text',
-        quickSuggestions: ['Light / sound sensitivity', 'Nausea', 'Relieved by rest / hydration', 'None reported'],
+        quickSuggestions: ['Sensitive to light / sound', 'Nausea / upset stomach', 'Better after rest / drinking water', 'None noticed'],
         extractedSummary: updatedDraft,
       };
     }
@@ -366,10 +366,12 @@ export const AIService = {
             symptomTrajectory: data.symptomTrajectory || 'fluctuating',
             trajectoryNotes: data.trajectoryNotes || 'Symptom intensity and frequency have remained episodic without continuous escalation.',
             patientSummary: {
-              name: userProfile.name,
-              age: userProfile.age,
-              sex: userProfile.sex.charAt(0).toUpperCase() + userProfile.sex.slice(1),
-              country: userProfile.country,
+              name: userProfile?.name?.trim() || 'Not provided',
+              age: userProfile?.age && userProfile.age > 0 ? userProfile.age : 0,
+              sex: userProfile?.sex && userProfile.sex !== 'prefer_not_to_say'
+                ? userProfile.sex.charAt(0).toUpperCase() + userProfile.sex.slice(1)
+                : 'Not provided',
+              country: userProfile?.country?.trim() || 'Not provided',
             },
             primaryConcerns: data.primaryConcerns || [],
             symptomTimeline: data.symptomTimeline || [],
@@ -385,12 +387,12 @@ export const AIService = {
               purpose: m.purpose,
             })),
             relevantMedicalHistory: [
-              ...(userProfile.conditions.length > 0
+              ...(userProfile?.conditions && userProfile.conditions.length > 0
                 ? userProfile.conditions.map((c) => `Documented condition: ${c}`)
-                : ['No chronic conditions recorded by user']),
-              ...(userProfile.allergies.length > 0
+                : ['Conditions: Not provided']),
+              ...(userProfile?.allergies && userProfile.allergies.length > 0
                 ? userProfile.allergies.map((a) => `Allergy: ${a}`)
-                : ['No known allergies recorded']),
+                : ['Allergies: Not provided']),
             ],
             recentMeasurements: measurements.slice(0, 5).map((m) => ({
               metric: m.type.replace('_', ' ').toUpperCase(),
@@ -439,10 +441,12 @@ export const AIService = {
       symptomTrajectory: symptoms.length > 3 && symptoms[0].severity < symptoms[symptoms.length - 1].severity ? 'improving' : 'fluctuating',
       trajectoryNotes: 'Observations reflect episodic occurrences without sustained chronic escalation.',
       patientSummary: {
-        name: userProfile.name,
-        age: userProfile.age,
-        sex: userProfile.sex.charAt(0).toUpperCase() + userProfile.sex.slice(1),
-        country: userProfile.country,
+        name: userProfile?.name?.trim() || 'Not provided',
+        age: userProfile?.age && userProfile.age > 0 ? userProfile.age : 0,
+        sex: userProfile?.sex && userProfile.sex !== 'prefer_not_to_say'
+          ? userProfile.sex.charAt(0).toUpperCase() + userProfile.sex.slice(1)
+          : 'Not provided',
+        country: userProfile?.country?.trim() || 'Not provided',
       },
       primaryConcerns: distinctSymptoms.slice(0, 3).map((symp) => {
         const count = symptoms.filter((s) => s.symptomName === symp).length;
@@ -471,6 +475,33 @@ export const AIService = {
           `Average logged sleep duration: ${avgSleepHours}h ${avgSleepRemMins}m across ${sleepRecords.length} nights.`,
           `${symptoms.filter((s) => s.severity >= 7).length} entries were rated at or above 7/10 in severity.`,
           `${sleepRecords.filter((s) => s.quality === 'poor').length} of ${sleepRecords.length} logged sleep periods were rated as "poor".`,
+          ...(measurements.filter((m) => m.type === 'blood_pressure').length > 0
+            ? [
+                `Latest blood pressure recorded: ${
+                  [...measurements]
+                    .filter((m) => m.type === 'blood_pressure')
+                    .sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date))[0]?.value
+                } mmHg.`,
+              ]
+            : []),
+          ...(measurements.filter((m) => m.type === 'weight').length > 0
+            ? [
+                `Latest body weight recorded: ${
+                  [...measurements]
+                    .filter((m) => m.type === 'weight')
+                    .sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date))[0]?.value
+                } kg.`,
+              ]
+            : []),
+          ...(measurements.filter((m) => m.type === 'temperature').length > 0
+            ? [
+                `Latest body temperature recorded: ${
+                  [...measurements]
+                    .filter((m) => m.type === 'temperature')
+                    .sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date))[0]?.value
+                } °C.`,
+              ]
+            : []),
         ],
         aiGeneratedObservations: [
           'Symptom episodes were recorded with higher frequency on days where previous nocturnal sleep was below the recorded average.',
@@ -485,18 +516,27 @@ export const AIService = {
         purpose: m.purpose,
       })),
       relevantMedicalHistory: [
-        ...(userProfile.conditions.length > 0
+        ...(userProfile?.conditions && userProfile.conditions.length > 0
           ? userProfile.conditions.map((c) => `Condition: ${c}`)
-          : ['No chronic conditions recorded by user']),
-        ...(userProfile.allergies.length > 0
+          : ['Conditions: Not provided']),
+        ...(userProfile?.allergies && userProfile.allergies.length > 0
           ? userProfile.allergies.map((a) => `Allergy: ${a}`)
-          : ['No known allergies recorded']),
+          : ['Allergies: Not provided']),
       ],
-      recentMeasurements: measurements.slice(0, 5).map((m) => ({
-        metric: m.type.replace('_', ' ').toUpperCase(),
-        value: `${m.value} ${m.unit}`,
-        date: m.date,
-      })),
+      recentMeasurements: (() => {
+        const sorted = [...measurements].sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date));
+        const map = new Map<string, MeasurementRecord>();
+        sorted.forEach((m) => {
+          if (!map.has(m.type)) {
+            map.set(m.type, m);
+          }
+        });
+        return Array.from(map.values()).map((m) => ({
+          metric: m.type.replace('_', ' ').toUpperCase(),
+          value: `${m.value} ${m.unit}`,
+          date: m.date,
+        }));
+      })(),
       clinicianQuestions: [
         `Review pattern of ${distinctSymptoms[0] || 'logged symptoms'} (${totalSymptomCount} episodes in ${periodDays} days) to evaluate appropriate non-pharmacological or prophylactic options.`,
         'Assess whether recent sleep variance and occupational stress levels are contributing factors.',

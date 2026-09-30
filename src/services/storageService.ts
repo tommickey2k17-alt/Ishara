@@ -90,6 +90,36 @@ export const StorageService = {
   },
   saveUserProfile(profile: UserProfile): void {
     setItem(STORAGE_KEYS.USER_PROFILE, profile);
+    // Keep all stored doctor reports synchronized with current profile identity
+    const currentReports = getItem<DoctorReport[]>(STORAGE_KEYS.REPORTS, []);
+    if (currentReports.length > 0) {
+      const patientName = profile.name?.trim() || 'Not provided';
+      const patientSex = profile.sex && profile.sex !== 'prefer_not_to_say'
+        ? profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1)
+        : 'Not provided';
+      const patientCountry = profile.country?.trim() || 'Not provided';
+      const patientAge = profile.age && profile.age > 0 ? profile.age : 0;
+
+      const updatedReports = currentReports.map((rep) => ({
+        ...rep,
+        patientSummary: {
+          ...rep.patientSummary,
+          name: patientName,
+          age: patientAge,
+          sex: patientSex,
+          country: patientCountry,
+        },
+        relevantMedicalHistory: [
+          ...(profile.conditions && profile.conditions.length > 0
+            ? profile.conditions.map((c) => `Documented condition: ${c}`)
+            : ['Conditions: Not provided']),
+          ...(profile.allergies && profile.allergies.length > 0
+            ? profile.allergies.map((a) => `Allergy: ${a}`)
+            : ['Allergies: Not provided']),
+        ],
+      }));
+      setItem(STORAGE_KEYS.REPORTS, updatedReports);
+    }
   },
 
   // Symptoms
@@ -219,7 +249,39 @@ export const StorageService = {
 
   // Reports
   getReports(): DoctorReport[] {
-    return getItem(STORAGE_KEYS.REPORTS, [DEMO_DOCTOR_REPORT]);
+    const reports = getItem<DoctorReport[]>(STORAGE_KEYS.REPORTS, []);
+    const profile = this.getUserProfile();
+    const patientName = profile.name?.trim() || 'Not provided';
+    const patientSex = profile.sex && profile.sex !== 'prefer_not_to_say'
+      ? profile.sex.charAt(0).toUpperCase() + profile.sex.slice(1)
+      : 'Not provided';
+    const patientCountry = profile.country?.trim() || 'Not provided';
+    const patientAge = profile.age && profile.age > 0 ? profile.age : 0;
+
+    const mapReportProfile = (rep: DoctorReport): DoctorReport => ({
+      ...rep,
+      patientSummary: {
+        ...rep.patientSummary,
+        name: patientName,
+        age: patientAge,
+        sex: patientSex,
+        country: patientCountry,
+      },
+      relevantMedicalHistory: [
+        ...(profile.conditions && profile.conditions.length > 0
+          ? profile.conditions.map((c) => `Documented condition: ${c}`)
+          : ['Conditions: Not provided']),
+        ...(profile.allergies && profile.allergies.length > 0
+          ? profile.allergies.map((a) => `Allergy: ${a}`)
+          : ['Allergies: Not provided']),
+      ],
+    });
+
+    if (reports.length > 0) {
+      return reports.map(mapReportProfile);
+    }
+
+    return [mapReportProfile(DEMO_DOCTOR_REPORT)];
   },
   addReport(report: DoctorReport): void {
     const list = this.getReports();
@@ -237,13 +299,13 @@ export const StorageService = {
   // Clear all data
   clearAllData(): void {
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
-    // Reset with blank profile
+    // Reset with blank uninitialized profile
     const blankProfile: UserProfile = {
       id: `user-${Date.now()}`,
-      name: 'User',
-      age: 30,
+      name: '',
+      age: 0,
       sex: 'prefer_not_to_say',
-      country: 'US',
+      country: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       emergencyPhone: '',
       conditions: [],

@@ -58,20 +58,23 @@ export const BottomNav: React.FC<Props> = ({
   return (
     <>
       {/* Prominent Floating Log Button for Mobile & Desktop */}
-      <div className="fixed bottom-20 md:bottom-8 right-6 z-40">
+      <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-8 right-4 sm:right-6 z-40">
         <button
           onClick={onOpenQuickLog}
-          className="flex items-center gap-2 px-5 py-3.5 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold rounded-full shadow-xl shadow-teal-700/30 transition-all cursor-pointer group"
+          className="flex items-center gap-2 px-4 py-3 sm:px-5 sm:py-3.5 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold rounded-full shadow-lg shadow-teal-700/25 transition-all cursor-pointer group"
           aria-label="Quick Log health event"
         >
           <Plus className="w-5 h-5 transition-transform group-hover:rotate-90 stroke-[2.5]" />
-          <span className="text-sm tracking-wide">+ Log</span>
+          <span className="text-xs sm:text-sm tracking-wide font-bold">+ Log</span>
         </button>
       </div>
 
-      {/* Bottom Navigation Bar for Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1 safe-area-pb shadow-lg">
-        <div className="flex items-center justify-around">
+      {/* Bottom Navigation Bar for Mobile (Evenly distributed, zero clipping, safe-area inset) */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <div className="grid grid-cols-5 w-full items-center py-1">
           {mobileTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = tab.id === 'more' ? isMoreOpen : activeTab === tab.id;
@@ -79,13 +82,19 @@ export const BottomNav: React.FC<Props> = ({
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] text-xs transition-colors cursor-pointer ${
+                className={`flex flex-col items-center justify-center py-1.5 px-0.5 w-full text-center transition-colors cursor-pointer select-none ${
                   isActive ? 'text-teal-700 font-semibold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-teal-600 stroke-[2.25]' : 'text-slate-400'}`} />
-                <span className="text-[11px] leading-tight">{tab.label}</span>
-                {isActive && <span className="w-1 h-1 rounded-full bg-teal-600 mt-0.5" />}
+                <Icon className={`w-5 h-5 mb-0.5 shrink-0 ${isActive ? 'text-teal-600 stroke-[2.25]' : 'text-slate-400'}`} />
+                <span className="text-[10px] leading-tight tracking-tight truncate max-w-full">
+                  {tab.label}
+                </span>
+                {isActive ? (
+                  <span className="w-1 h-1 rounded-full bg-teal-600 mt-0.5 shrink-0" />
+                ) : (
+                  <span className="w-1 h-1 mt-0.5 opacity-0 shrink-0" />
+                )}
               </button>
             );
           })}
@@ -98,8 +107,8 @@ export const BottomNav: React.FC<Props> = ({
           <div className="w-full bg-white rounded-t-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">More Tools & Navigation</h3>
-                <p className="text-xs text-slate-500">Access full journal tools and medical reports</p>
+                <h3 className="text-base font-bold text-slate-900">More Features</h3>
+                <p className="text-xs text-slate-500">Explore symptom history, sleep journal, doctor prep, and reports</p>
               </div>
               <button
                 onClick={() => setIsMoreOpen(false)}
@@ -119,8 +128,8 @@ export const BottomNav: React.FC<Props> = ({
                 className="p-3.5 bg-slate-50 hover:bg-teal-50 border border-slate-200 rounded-2xl flex flex-col items-start gap-1 text-left cursor-pointer transition-colors"
               >
                 <Stethoscope className="w-5 h-5 text-teal-600" />
-                <span className="font-bold text-slate-900">Symptom Database</span>
-                <span className="text-[11px] text-slate-500">History, triggers & detail</span>
+                <span className="font-bold text-slate-900">Symptom History</span>
+                <span className="text-[11px] text-slate-500">All symptoms, details & what helped</span>
               </button>
 
               <button
@@ -132,7 +141,7 @@ export const BottomNav: React.FC<Props> = ({
               >
                 <Moon className="w-5 h-5 text-indigo-600" />
                 <span className="font-bold text-slate-900">Sleep Journal</span>
-                <span className="text-[11px] text-slate-500">Duration & quality stats</span>
+                <span className="text-[11px] text-slate-500">Sleep hours & how you rested</span>
               </button>
 
               <button
@@ -144,7 +153,7 @@ export const BottomNav: React.FC<Props> = ({
               >
                 <Sparkles className="w-5 h-5 text-teal-700" />
                 <span className="font-bold text-teal-950">Doctor Visit Mode</span>
-                <span className="text-[11px] text-teal-700">Appointment briefing & Qs</span>
+                <span className="text-[11px] text-teal-700">Quick briefing & questions for doctor</span>
               </button>
 
               <button
@@ -156,7 +165,7 @@ export const BottomNav: React.FC<Props> = ({
               >
                 <FileText className="w-5 h-5 text-emerald-600" />
                 <span className="font-bold text-slate-900">Doctor Report</span>
-                <span className="text-[11px] text-slate-500">One-page clinical summary</span>
+                <span className="text-[11px] text-slate-500">One-page summary for doctor</span>
               </button>
 
               <button
@@ -179,7 +188,7 @@ export const BottomNav: React.FC<Props> = ({
             {/* Quick Export Section */}
             <div className="pt-2 border-t border-slate-100">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                Export Health Data:
+                Download Your Health Notes:
               </span>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
@@ -190,7 +199,7 @@ export const BottomNav: React.FC<Props> = ({
                   className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                  <span>Download CSV</span>
+                  <span>Spreadsheet (CSV)</span>
                 </button>
                 <button
                   onClick={() => {
@@ -200,7 +209,7 @@ export const BottomNav: React.FC<Props> = ({
                   className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileCode className="w-4 h-4 text-indigo-600" />
-                  <span>Download JSON</span>
+                  <span>Full Backup (JSON)</span>
                 </button>
               </div>
             </div>

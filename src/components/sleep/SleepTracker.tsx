@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { SleepRecord, SymptomEpisode } from '../../types';
+import { formatSleepQuality } from '../../utils/plainLanguage';
 
 interface Props {
   sleepRecords: SleepRecord[];
@@ -47,17 +48,17 @@ export const SleepTracker: React.FC<Props> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Sleep Journal & Patterns</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Your Sleep Journal</h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Nocturnal duration, restfulness metrics, and non-causal symptom timeline correlation
+            Track how much you sleep, how well you rest, and how your sleep connects with how you feel
           </p>
         </div>
         <button
           onClick={onOpenQuickLog}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Log Sleep Session</span>
+          <span>Log Sleep</span>
         </button>
       </div>
 
@@ -138,7 +139,7 @@ export const SleepTracker: React.FC<Props> = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="capitalize text-slate-500 text-[11px]">{r.quality}</span>
+                    <span className="text-slate-500 text-[11px]">{formatSleepQuality(r.quality)}</span>
                     <span className="font-bold text-slate-900 w-12 text-right">{hours}h</span>
                   </div>
                 </div>
@@ -162,13 +163,13 @@ export const SleepTracker: React.FC<Props> = ({
       <div className="p-4 sm:p-5 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-2">
         <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs uppercase tracking-wider">
           <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span>Factual Sleep-Symptom Pattern Observation</span>
+          <span>Pattern Spotted: Sleep & Symptoms</span>
         </div>
         <p className="text-xs sm:text-sm text-indigo-950 leading-relaxed font-medium">
-          “Symptom entries were more frequent on days when sleep duration was below your recorded average of {avgHours}h {avgRemMins}m.”
+          “Symptoms were recorded more often on days when you slept less than your usual {avgHours}h {avgRemMins}m.”
         </p>
         <p className="text-xs text-indigo-800/80 leading-relaxed">
-          <strong>Important Clinical Distinction:</strong> This is a factual observation of timing in your log. Ishara does not infer or state that sleep caused the symptoms. Discuss observed patterns with your healthcare provider.
+          <strong>Good to know:</strong> This simply shows what happened on the same days. Sleeping less didn't necessarily cause the symptoms. Feel free to share this pattern with your doctor.
         </p>
       </div>
 
@@ -184,10 +185,10 @@ export const SleepTracker: React.FC<Props> = ({
             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
               <tr>
                 <th className="py-2.5 px-4">Date</th>
-                <th className="py-2.5 px-4">Bedtime / Wake</th>
-                <th className="py-2.5 px-4">Duration</th>
-                <th className="py-2.5 px-4">Quality</th>
-                <th className="py-2.5 px-4">Awakenings</th>
+                <th className="py-2.5 px-4">Bedtime & Wake Up</th>
+                <th className="py-2.5 px-4">Total Sleep</th>
+                <th className="py-2.5 px-4">How You Rested</th>
+                <th className="py-2.5 px-4">Woke Up During Night</th>
                 <th className="py-2.5 px-4">Notes</th>
               </tr>
             </thead>
@@ -201,7 +202,7 @@ export const SleepTracker: React.FC<Props> = ({
                   <td className="py-2.5 px-4 font-bold text-slate-900">
                     {Math.floor(r.totalMinutes / 60)}h {r.totalMinutes % 60}m
                   </td>
-                  <td className="py-2.5 px-4 capitalize">{r.quality}</td>
+                  <td className="py-2.5 px-4">{formatSleepQuality(r.quality)}</td>
                   <td className="py-2.5 px-4">{r.nightAwakenings}</td>
                   <td className="py-2.5 px-4 text-slate-500 italic truncate max-w-xs">{r.notes || '—'}</td>
                 </tr>

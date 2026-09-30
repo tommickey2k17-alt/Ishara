@@ -24,22 +24,25 @@ export const TriStateBadge: React.FC<Props> = ({
     switch (state) {
       case 'yes':
         return {
-          text: 'YES',
+          text: 'Yes',
           icon: Check,
-          classes: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold',
+          classes: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold',
+          tooltip: 'Confirmed yes',
         };
       case 'no':
         return {
-          text: 'NO',
+          text: 'No',
           icon: X,
-          classes: 'bg-slate-100 text-slate-700 border-slate-300 font-semibold',
+          classes: 'bg-slate-100 text-slate-700 border-slate-300 font-medium',
+          tooltip: 'Confirmed no',
         };
       case 'not_recorded':
       default:
         return {
-          text: 'NOT RECORDED',
+          text: 'Not recorded',
           icon: HelpCircle,
-          classes: 'bg-amber-50/70 text-amber-800 border-amber-300/80 font-medium italic',
+          classes: 'bg-amber-50/70 text-amber-800 border-amber-300/80 font-normal',
+          tooltip: "This was not asked or not recorded. We never assume it means 'no'.",
         };
     }
   };
@@ -49,14 +52,10 @@ export const TriStateBadge: React.FC<Props> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] tracking-wide select-none ${config.classes} ${className}`}
-      title={
-        state === 'not_recorded'
-          ? 'Information was not asked or not recorded. Absence of recording is NOT a negative finding.'
-          : undefined
-      }
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] select-none ${config.classes} ${className}`}
+      title={config.tooltip}
     >
-      {label && <span className="font-normal not-italic text-slate-600 mr-0.5">{label}:</span>}
+      {label && <span className="font-normal text-slate-600 mr-0.5">{label}:</span>}
       <Icon className="w-2.5 h-2.5 shrink-0" />
       <span>{config.text}</span>
     </span>

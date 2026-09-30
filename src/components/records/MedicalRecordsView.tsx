@@ -120,28 +120,28 @@ export const MedicalRecordsView: React.FC<Props> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Medical Records & Consultations</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Medical Records & Doctor Visits</h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Secure personal archive of lab reports, physician consultation notes, and clinical visits
+            Keep your test results, doctor notes, and past appointments organized in one safe place
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {activeTab === 'records' ? (
             <button
               onClick={() => setIsAddRecordOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer w-full sm:w-auto"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Document / Lab</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Add Document or Test</span>
             </button>
           ) : (
             <button
               onClick={() => setIsAddVisitOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer w-full sm:w-auto"
             >
-              <Plus className="w-4 h-4" />
-              <span>Log Doctor Visit</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Record Doctor Visit</span>
             </button>
           )}
         </div>
@@ -157,7 +157,7 @@ export const MedicalRecordsView: React.FC<Props> = ({
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Medical Documents & Labs ({medicalRecords.length})
+          Documents & Test Results ({medicalRecords.length})
         </button>
         <button
           onClick={() => setActiveTab('visits')}
@@ -167,7 +167,7 @@ export const MedicalRecordsView: React.FC<Props> = ({
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Doctor Visits & Consultations ({doctorVisits.length})
+          Doctor Visits ({doctorVisits.length})
         </button>
       </div>
 
@@ -201,7 +201,7 @@ export const MedicalRecordsView: React.FC<Props> = ({
 
                 {rec.userNotes && (
                   <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <strong className="text-slate-500 block mb-0.5">Patient Notes:</strong>
+                    <strong className="text-slate-500 block mb-0.5">Your Notes:</strong>
                     {rec.userNotes}
                   </p>
                 )}
@@ -211,13 +211,13 @@ export const MedicalRecordsView: React.FC<Props> = ({
                     <div className="flex items-center justify-between text-blue-900 font-bold">
                       <div className="flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Document Key Content Summary</span>
+                        <span>Summary of Key Details</span>
                       </div>
                       <DataProvenanceBadge type="ai_observation" />
                     </div>
                     <p className="text-slate-800 leading-relaxed">{rec.documentSummary}</p>
                     <p className="text-[10px] text-blue-800/80 pt-1 border-t border-blue-200/50">
-                      <strong>Clinical Neutrality Notice:</strong> Summary transcribes recorded document content and stated laboratory reference ranges. It does not independently evaluate normal vs abnormal status.
+                      <strong>Plain language note:</strong> This summary highlights key points and normal ranges listed on your document. It does not decide whether a result is normal or concerning.
                     </p>
                   </div>
                 )}

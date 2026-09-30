@@ -1,0 +1,233 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with demographics, medical background, tracked metrics and preferences",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Profile or User UID" },
+        "name": { "type": "string", "maxLength": 100, "description": "Patient full name" },
+        "age": { "type": "number", "description": "Age in years" },
+        "birthDate": { "type": "string", "maxLength": 30, "description": "Date of birth YYYY-MM-DD" },
+        "sex": { "type": "string", "enum": ["female", "male", "intersex", "prefer_not_to_say"], "description": "Biological or recorded sex" },
+        "country": { "type": "string", "maxLength": 100, "description": "Country of residence" },
+        "timezone": { "type": "string", "maxLength": 100, "description": "User timezone" },
+        "emergencyPhone": { "type": "string", "maxLength": 50, "description": "Emergency contact number" },
+        "conditions": { "type": "array", "description": "Diagnosed conditions or medical history" },
+        "allergies": { "type": "array", "description": "Known allergies" },
+        "trackedMetrics": { "type": "array", "description": "List of metrics the user tracks" },
+        "isDemoData": { "type": "boolean", "description": "Whether this is sample data" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["name", "sex", "country"]
+    },
+    "SymptomEpisode": {
+      "title": "SymptomEpisode",
+      "description": "Symptom log entry with character, severity, progression, and clinical tri-state flags",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique episode ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "symptomName": { "type": "string", "maxLength": 150, "description": "Primary symptom name" },
+        "category": { "type": "string", "maxLength": 50, "description": "Symptom category" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" },
+        "date": { "type": "string", "maxLength": 30, "description": "YYYY-MM-DD date" },
+        "startTime": { "type": "string", "maxLength": 30, "description": "Start time or period" },
+        "endTime": { "type": "string", "maxLength": 30, "description": "End time" },
+        "isResolved": { "type": "boolean", "description": "Whether episode is resolved" },
+        "severity": { "type": "number", "description": "Severity rating 0-10" },
+        "frequency": { "type": "string", "maxLength": 50, "description": "Frequency classification" },
+        "duration": { "type": "string", "maxLength": 100, "description": "Duration text" },
+        "location": { "type": "string", "maxLength": 150, "description": "Body location" },
+        "characterDescription": { "type": "string", "maxLength": 200, "description": "Sensory character description" },
+        "triggers": { "type": "array", "description": "Identified triggers" },
+        "relievingFactors": { "type": "array", "description": "Factors that relieve symptom" },
+        "associatedSymptoms": { "type": "array", "description": "Co-occurring symptoms" },
+        "userNotes": { "type": "string", "maxLength": 2000, "description": "User notes" },
+        "isRecurring": { "type": "boolean", "description": "Whether symptom has recurred" },
+        "medicallyEvaluated": { "type": "boolean", "description": "Evaluated by clinician" }
+      },
+      "required": ["id", "symptomName", "severity", "date"]
+    },
+    "SleepRecord": {
+      "title": "SleepRecord",
+      "description": "Sleep session tracking duration, wake times, quality and restfulness",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Sleep record ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "bedtime": { "type": "string", "maxLength": 30, "description": "Bedtime" },
+        "wakeTime": { "type": "string", "maxLength": 30, "description": "Wake time" },
+        "totalMinutes": { "type": "number", "description": "Total sleep in minutes" },
+        "quality": { "type": "string", "enum": ["poor", "okay", "good", "excellent"], "description": "Subjective sleep quality" },
+        "nightAwakenings": { "type": "number", "description": "Number of times awakened" },
+        "restfulnessRating": { "type": "number", "description": "Rating 1 to 5" },
+        "isShiftOrNightWork": { "type": "boolean", "description": "Shift work flag" },
+        "notes": { "type": "string", "maxLength": 1000, "description": "Sleep notes" }
+      },
+      "required": ["id", "date", "totalMinutes", "quality"]
+    },
+    "MeasurementRecord": {
+      "title": "MeasurementRecord",
+      "description": "Biometric or vital health measurement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Measurement ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" },
+        "type": { "type": "string", "maxLength": 50, "description": "Metric type identifier" },
+        "value": { "type": "string", "maxLength": 100, "description": "Measured value as string or number string" },
+        "unit": { "type": "string", "maxLength": 30, "description": "Unit of measurement" },
+        "notes": { "type": "string", "maxLength": 500, "description": "Optional notes" }
+      },
+      "required": ["id", "date", "type", "unit"]
+    },
+    "MedicationItem": {
+      "title": "MedicationItem",
+      "description": "Prescription, OTC drug, or dietary supplement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Medication ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "name": { "type": "string", "maxLength": 150, "description": "Medication name" },
+        "dosage": { "type": "string", "maxLength": 100, "description": "Dosage amount" },
+        "frequency": { "type": "string", "maxLength": 100, "description": "Dosage frequency" },
+        "purpose": { "type": "string", "maxLength": 200, "description": "Indication or reason" },
+        "startDate": { "type": "string", "maxLength": 30, "description": "Start date" },
+        "isActive": { "type": "boolean", "description": "Whether currently taken" },
+        "takenToday": { "type": "boolean", "description": "Marked taken today" }
+      },
+      "required": ["id", "name", "dosage", "frequency", "isActive"]
+    },
+    "MedicalRecordItem": {
+      "title": "MedicalRecordItem",
+      "description": "Clinical document, lab report, or diagnostic result summary",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Record ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "providerOrClinic": { "type": "string", "maxLength": 150, "description": "Clinic or doctor name" },
+        "category": { "type": "string", "maxLength": 50, "description": "Document category" },
+        "title": { "type": "string", "maxLength": 200, "description": "Document title" },
+        "userNotes": { "type": "string", "maxLength": 2000, "description": "User notes" },
+        "documentSummary": { "type": "string", "maxLength": 5000, "description": "Summary of record" }
+      },
+      "required": ["id", "date", "title", "providerOrClinic", "category"]
+    },
+    "DoctorReport": {
+      "title": "DoctorReport",
+      "description": "Generated clinical appointment summary and physician prep dossier",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Report ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "generatedAt": { "type": "string", "description": "Generation timestamp" },
+        "periodLabel": { "type": "string", "maxLength": 100, "description": "Label for period covered" },
+        "periodDays": { "type": "number", "description": "Number of days analyzed" },
+        "reasonForVisit": { "type": "string", "maxLength": 500, "description": "Chief complaint" },
+        "symptomTrajectory": { "type": "string", "maxLength": 50, "description": "Trajectory rating" }
+      },
+      "required": ["id", "generatedAt", "periodLabel", "periodDays"]
+    },
+    "DailyCheckIn": {
+      "title": "DailyCheckIn",
+      "description": "Daily subjective health check-in log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Check-in ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" },
+        "sleepQuality": { "type": "string", "maxLength": 20, "description": "Sleep quality" },
+        "sleepHours": { "type": "number", "description": "Hours slept" },
+        "energyLevel": { "type": "number", "description": "Energy 0-10" },
+        "moodLevel": { "type": "string", "maxLength": 20, "description": "Mood rating" },
+        "stressLevel": { "type": "number", "description": "Stress 0-10" },
+        "newSymptoms": { "type": "boolean", "description": "Any new symptoms" },
+        "symptomsWorse": { "type": "boolean", "description": "Symptoms worse" },
+        "takenRegularMedications": { "type": "boolean", "description": "Meds taken" }
+      },
+      "required": ["id", "date", "energyLevel", "stressLevel"]
+    },
+    "DoctorVisit": {
+      "title": "DoctorVisit",
+      "description": "Record of a clinical consultation or doctor appointment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Visit ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "doctorName": { "type": "string", "maxLength": 150, "description": "Doctor name" },
+        "specialty": { "type": "string", "maxLength": 100, "description": "Specialty" },
+        "clinic": { "type": "string", "maxLength": 150, "description": "Clinic name" },
+        "reasonForVisit": { "type": "string", "maxLength": 500, "description": "Reason for visit" },
+        "keyDiscussionNotes": { "type": "string", "maxLength": 3000, "description": "Discussion notes" },
+        "nextSteps": { "type": "string", "maxLength": 2000, "description": "Next steps" }
+      },
+      "required": ["id", "date", "doctorName", "clinic"]
+    },
+    "SafetyAlert": {
+      "title": "SafetyAlert",
+      "description": "Clinical safety red-flag alert generated for user attention",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Alert ID" },
+        "userId": { "type": "string", "description": "Owner Firebase UID" },
+        "timestamp": { "type": "string", "description": "Timestamp" },
+        "date": { "type": "string", "maxLength": 30, "description": "Date YYYY-MM-DD" },
+        "level": { "type": "string", "maxLength": 50, "description": "Urgency level" },
+        "explanation": { "type": "string", "maxLength": 1000, "description": "Explanation" },
+        "recommendedAction": { "type": "string", "maxLength": 1000, "description": "Action advised" },
+        "emergencyNumber": { "type": "string", "maxLength": 30, "description": "Emergency number" },
+        "countryCode": { "type": "string", "maxLength": 10, "description": "Country code" },
+        "dismissed": { "type": "boolean", "description": "Dismissal status" }
+      },
+      "required": ["id", "level", "explanation", "dismissed"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/profile/{profileId}": {
+      "schema": "UserProfile",
+      "description": "User profile demographic and health preferences, locked to the authenticated user"
+    },
+    "/users/{userId}/symptoms/{symptomId}": {
+      "schema": "SymptomEpisode",
+      "description": "User symptom log entries, strictly private to owner"
+    },
+    "/users/{userId}/sleep/{sleepId}": {
+      "schema": "SleepRecord",
+      "description": "User sleep records, strictly private to owner"
+    },
+    "/users/{userId}/measurements/{measurementId}": {
+      "schema": "MeasurementRecord",
+      "description": "User biometric measurements, strictly private to owner"
+    },
+    "/users/{userId}/medications/{medicationId}": {
+      "schema": "MedicationItem",
+      "description": "User medications and supplements list, strictly private to owner"
+    },
+    "/users/{userId}/medicalRecords/{recordId}": {
+      "schema": "MedicalRecordItem",
+      "description": "User clinical documents and lab reports, strictly private to owner"
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": "DoctorReport",
+      "description": "Generated doctor reports and PDFs, strictly private to owner"
+    },
+    "/users/{userId}/checkins/{checkinId}": {
+      "schema": "DailyCheckIn",
+      "description": "Daily subjective health check-in entries, strictly private to owner"
+    },
+    "/users/{userId}/doctorVisits/{visitId}": {
+      "schema": "DoctorVisit",
+      "description": "Past clinical consultations, strictly private to owner"
+    },
+    "/users/{userId}/safetyAlerts/{alertId}": {
+      "schema": "SafetyAlert",
+      "description": "Red-flag alerts generated for user, strictly private to owner"
+    }
+  }
+}

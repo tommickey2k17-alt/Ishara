@@ -14,7 +14,6 @@ import {
   CalendarCheck,
   ChevronRight,
   Sparkles,
-  ShieldCheck,
   Flame,
   Droplets,
   Heart,
@@ -33,6 +32,7 @@ import {
 } from '../../types';
 import { MedicalDisclaimer } from '../common/MedicalDisclaimer';
 import { DataProvenanceBadge } from '../common/DataProvenanceBadge';
+import { formatSymptomFrequency } from '../../utils/plainLanguage';
 
 interface Props {
   userProfile: UserProfile;
@@ -70,7 +70,6 @@ export const HomeDashboard: React.FC<Props> = ({
 
   const todayStr = new Date().toISOString().split('T')[0];
   const activeSymptoms = symptoms.filter((s) => !s.isResolved);
-  const todaySymptoms = symptoms.filter((s) => s.date === todayStr);
   const latestSleep = sleepRecords[0];
 
   // Helper for severity color
@@ -85,13 +84,13 @@ export const HomeDashboard: React.FC<Props> = ({
   const getSleepQualityLabel = (quality?: string) => {
     switch (quality) {
       case 'excellent':
-        return '🌟 Restful & Deep';
+        return '🌟 Restful & deep';
       case 'good':
-        return '🙂 Good Rest';
+        return '🙂 Good rest';
       case 'okay':
-        return '😐 Fair Rest';
+        return '😐 Fair rest';
       case 'poor':
-        return '😴 Broken / Restless';
+        return '😴 Broken / restless';
       default:
         return 'Not recorded';
     }
@@ -103,7 +102,7 @@ export const HomeDashboard: React.FC<Props> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            {getGreeting()}, {userProfile.name.split(' ')[0]}
+            {getGreeting()}, {userProfile?.name?.trim() ? userProfile.name.trim().split(' ')[0] : 'there'}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Today is{' '}
@@ -116,20 +115,20 @@ export const HomeDashboard: React.FC<Props> = ({
           </p>
         </div>
 
-        {/* Primary Action Button: "Log a symptom" in seconds */}
-        <div className="flex items-center gap-2">
+        {/* Primary Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => onNavigateToTab('doctor_visit')}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-teal-50 border border-slate-300 hover:border-teal-300 text-slate-800 hover:text-teal-900 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-teal-50 border border-slate-300 hover:border-teal-300 text-slate-800 hover:text-teal-900 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-teal-600" />
-            <span>Doctor Visit Mode</span>
+            <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
+            <span>Prepare for Doctor Visit</span>
           </button>
           <button
             onClick={() => onOpenSymptomIntake()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
           >
-            <Stethoscope className="w-4 h-4" />
+            <Stethoscope className="w-4 h-4 shrink-0" />
             <span>Log a Symptom</span>
           </button>
         </div>
@@ -144,7 +143,7 @@ export const HomeDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
                 <Moon className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Sleep Overview</h3>
+              <h3 className="text-sm font-bold text-slate-900">Last Night's Sleep</h3>
             </div>
             <DataProvenanceBadge type="calculated" />
           </div>
@@ -162,13 +161,13 @@ export const HomeDashboard: React.FC<Props> = ({
 
               <div className="space-y-1 text-xs text-slate-600">
                 <div className="flex justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-500">Sleep Quality</span>
+                  <span className="text-slate-500">How you rested</span>
                   <span className="font-semibold text-slate-800">{getSleepQualityLabel(latestSleep.quality)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-t border-slate-100">
-                  <span className="text-slate-500">Night Awakenings</span>
+                  <span className="text-slate-500">Woke up during night</span>
                   <span className="font-semibold text-slate-800">
-                    {latestSleep.nightAwakenings === 0 ? 'None (Continuous)' : `${latestSleep.nightAwakenings} times`}
+                    {latestSleep.nightAwakenings === 0 ? 'None (slept straight through)' : `${latestSleep.nightAwakenings} times`}
                   </span>
                 </div>
               </div>
@@ -182,7 +181,7 @@ export const HomeDashboard: React.FC<Props> = ({
           ) : (
             <div className="text-center py-6 text-slate-400 text-xs">
               <Moon className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
-              No sleep logged for today yet.
+              No sleep logged for last night yet.
             </div>
           )}
 
@@ -201,7 +200,7 @@ export const HomeDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
                 <Stethoscope className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Active Symptoms</h3>
+              <h3 className="text-sm font-bold text-slate-900">Current Symptoms</h3>
             </div>
             <div className="flex items-center gap-2">
               <DataProvenanceBadge type="user_fact" />
@@ -232,7 +231,7 @@ export const HomeDashboard: React.FC<Props> = ({
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-1">
                       <span>{symp.location || 'General'}</span>
                       <span>·</span>
-                      <span className="capitalize">{symp.frequency}</span>
+                      <span>{formatSymptomFrequency(symp.frequency)}</span>
                     </div>
                   </div>
                 ))}
@@ -240,8 +239,8 @@ export const HomeDashboard: React.FC<Props> = ({
             ) : (
               <div className="text-center py-6 text-slate-500 text-xs">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-1.5" />
-                <p className="font-medium text-slate-700">No active symptoms currently</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">All previously logged episodes resolved</p>
+                <p className="font-medium text-slate-700">No active symptoms right now</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Everything logged previously has cleared up</p>
               </div>
             )}
           </div>
@@ -250,7 +249,7 @@ export const HomeDashboard: React.FC<Props> = ({
             onClick={() => onOpenSymptomIntake()}
             className="w-full py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-semibold border border-teal-200/80 transition-colors cursor-pointer"
           >
-            + Quick Log a Symptom
+            + Log a Symptom
           </button>
         </div>
 
@@ -261,7 +260,7 @@ export const HomeDashboard: React.FC<Props> = ({
               <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
                 <Pill className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Today's Medications</h3>
+              <h3 className="text-sm font-bold text-slate-900">Today's Medicines</h3>
             </div>
             <span className="text-[11px] text-slate-500">
               {medications.filter((m) => m.takenToday).length} of {medications.length} taken
@@ -295,7 +294,7 @@ export const HomeDashboard: React.FC<Props> = ({
               ))
             ) : (
               <div className="text-center py-6 text-slate-400 text-xs">
-                No medications recorded yet.
+                No medicines or supplements added yet.
               </div>
             )}
           </div>
@@ -304,33 +303,33 @@ export const HomeDashboard: React.FC<Props> = ({
             onClick={() => onNavigateToTab('profile')}
             className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
           >
-            Manage Medications
+            Manage Medicines
           </button>
         </div>
       </div>
 
-      {/* CARD 4: CONFIGURABLE DAILY HEALTH METRICS */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
+      {/* CARD 4: DAILY HEALTH CHECKS & VITALS */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
               <Activity className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Daily Health & Metrics</h3>
-              <p className="text-[11px] text-slate-500">Configured tracked personal parameters</p>
+              <h3 className="text-sm font-bold text-slate-900 leading-tight">Your Daily Health Checks</h3>
+              <p className="text-[11px] text-slate-500">Quick daily checks you've chosen to follow</p>
             </div>
           </div>
           <button
             onClick={onOpenDailyCheckIn}
-            className="flex items-center gap-1 text-xs text-teal-700 font-semibold hover:underline cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition-all cursor-pointer shadow-xs hover:border-teal-300 w-full sm:w-auto"
           >
-            <CalendarCheck className="w-3.5 h-3.5" />
-            <span>{latestCheckIn ? 'Update Check-in' : 'Start Check-in'}</span>
+            <CalendarCheck className="w-4 h-4 text-teal-700 shrink-0" />
+            <span>{latestCheckIn ? "Update Today's Check-in" : "Start Today's Check-in"}</span>
           </button>
         </div>
 
-        {/* Dynamic Metric Tiles */}
+        {/* Metric Tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Energy */}
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
@@ -342,7 +341,7 @@ export const HomeDashboard: React.FC<Props> = ({
               {latestCheckIn?.energyLevel !== undefined ? `${latestCheckIn.energyLevel}/10` : '—'}
             </div>
             <span className="text-[10px] text-slate-400">
-              {latestCheckIn?.energyLevel ? (latestCheckIn.energyLevel >= 7 ? 'High' : 'Moderate') : 'Unrecorded'}
+              {latestCheckIn?.energyLevel ? (latestCheckIn.energyLevel >= 7 ? 'Good energy' : latestCheckIn.energyLevel >= 4 ? 'Moderate' : 'Low energy') : 'Not logged today'}
             </span>
           </div>
 
@@ -355,7 +354,7 @@ export const HomeDashboard: React.FC<Props> = ({
             <div className="text-base font-bold text-slate-900 capitalize">
               {latestCheckIn?.moodLevel || '—'}
             </div>
-            <span className="text-[10px] text-slate-400">Self-reported</span>
+            <span className="text-[10px] text-slate-400">Your rating</span>
           </div>
 
           {/* Stress */}
@@ -368,44 +367,111 @@ export const HomeDashboard: React.FC<Props> = ({
               {latestCheckIn?.stressLevel !== undefined ? `${latestCheckIn.stressLevel}/10` : '—'}
             </div>
             <span className="text-[10px] text-slate-400">
-              {latestCheckIn?.stressLevel && latestCheckIn.stressLevel >= 7 ? 'Elevated' : 'Controlled'}
+              {latestCheckIn?.stressLevel ? (latestCheckIn.stressLevel >= 7 ? 'Higher than usual' : latestCheckIn.stressLevel >= 4 ? 'Manageable' : 'Low stress') : 'Not logged today'}
             </span>
           </div>
 
-          {/* Blood Pressure (from measurements) */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          {/* Blood Pressure (Editable from check-in / measurements) */}
+          <div
+            onClick={onOpenDailyCheckIn}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50/50 border border-slate-200/80 hover:border-teal-300 transition-all cursor-pointer group relative"
+            title="Click to view or edit today's blood pressure"
+          >
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-[11px] font-semibold">Blood Pressure</span>
+              <span className="text-[11px] font-semibold group-hover:text-teal-900 flex items-center gap-1">
+                <span>Blood Pressure</span>
+              </span>
               <Heart className="w-3.5 h-3.5 text-rose-500" />
             </div>
             <div className="text-base font-bold text-slate-900">
-              {measurements.find((m) => m.type === 'blood_pressure')?.value || '120/80'}
+              {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'blood_pressure')?.value
+                || latestCheckIn?.bloodPressure
+                || (latestCheckIn?.systolicBP && latestCheckIn?.diastolicBP ? `${latestCheckIn.systolicBP}/${latestCheckIn.diastolicBP}` : undefined)
+                || measurements.find((m) => m.type === 'blood_pressure')?.value
+                || '—'}
             </div>
-            <span className="text-[10px] text-slate-400">mmHg</span>
+            <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[10px] text-slate-400">
+                {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'blood_pressure') || latestCheckIn?.bloodPressure
+                  ? 'Updated today'
+                  : measurements.find((m) => m.type === 'blood_pressure')
+                    ? `Recorded ${measurements.find((m) => m.type === 'blood_pressure')?.date}`
+                    : 'Tap to record'}
+              </span>
+              <span className="text-[9px] text-teal-600 opacity-0 group-hover:opacity-100 font-semibold transition-opacity">
+                Edit ✎
+              </span>
+            </div>
           </div>
 
-          {/* Weight */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          {/* Weight (Editable from check-in / measurements) */}
+          <div
+            onClick={onOpenDailyCheckIn}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50/50 border border-slate-200/80 hover:border-teal-300 transition-all cursor-pointer group relative"
+            title="Click to view or edit today's weight"
+          >
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-[11px] font-semibold">Weight</span>
+              <span className="text-[11px] font-semibold group-hover:text-teal-900 flex items-center gap-1">
+                <span>Weight</span>
+              </span>
               <Scale className="w-3.5 h-3.5 text-teal-600" />
             </div>
             <div className="text-base font-bold text-slate-900">
-              {measurements.find((m) => m.type === 'weight')?.value || '74.2'} kg
+              {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'weight')
+                ? `${measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'weight')?.value} kg`
+                : latestCheckIn?.weight !== undefined
+                  ? `${latestCheckIn.weight} kg`
+                  : measurements.find((m) => m.type === 'weight')
+                    ? `${measurements.find((m) => m.type === 'weight')?.value} kg`
+                    : '—'}
             </div>
-            <span className="text-[10px] text-slate-400">Last recorded</span>
+            <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[10px] text-slate-400">
+                {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'weight') || latestCheckIn?.weight !== undefined
+                  ? 'Updated today'
+                  : measurements.find((m) => m.type === 'weight')
+                    ? `Recorded ${measurements.find((m) => m.type === 'weight')?.date}`
+                    : 'Tap to record'}
+              </span>
+              <span className="text-[9px] text-teal-600 opacity-0 group-hover:opacity-100 font-semibold transition-opacity">
+                Edit ✎
+              </span>
+            </div>
           </div>
 
-          {/* Temperature */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+          {/* Temperature (Editable from check-in / measurements) */}
+          <div
+            onClick={onOpenDailyCheckIn}
+            className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50/50 border border-slate-200/80 hover:border-teal-300 transition-all cursor-pointer group relative"
+            title="Click to view or edit today's temperature"
+          >
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-[11px] font-semibold">Temperature</span>
+              <span className="text-[11px] font-semibold group-hover:text-teal-900 flex items-center gap-1">
+                <span>Temperature</span>
+              </span>
               <Thermometer className="w-3.5 h-3.5 text-orange-500" />
             </div>
             <div className="text-base font-bold text-slate-900">
-              {measurements.find((m) => m.type === 'temperature')?.value || '36.8'} °C
+              {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'temperature')
+                ? `${measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'temperature')?.value} °C`
+                : latestCheckIn?.temperature !== undefined
+                  ? `${latestCheckIn.temperature} °C`
+                  : measurements.find((m) => m.type === 'temperature')
+                    ? `${measurements.find((m) => m.type === 'temperature')?.value} °C`
+                    : '—'}
             </div>
-            <span className="text-[10px] text-slate-400">Oral norm</span>
+            <div className="flex items-center justify-between mt-0.5">
+              <span className="text-[10px] text-slate-400">
+                {measurements.find((m) => m.date === new Date().toISOString().split('T')[0] && m.type === 'temperature') || latestCheckIn?.temperature !== undefined
+                  ? 'Updated today'
+                  : measurements.find((m) => m.type === 'temperature')
+                    ? `Recorded ${measurements.find((m) => m.type === 'temperature')?.date}`
+                    : 'Tap to record'}
+              </span>
+              <span className="text-[9px] text-teal-600 opacity-0 group-hover:opacity-100 font-semibold transition-opacity">
+                Edit ✎
+              </span>
+            </div>
           </div>
         </div>
       </div>

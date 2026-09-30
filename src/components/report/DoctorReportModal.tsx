@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
   Printer,
@@ -16,6 +16,8 @@ import {
   ShieldAlert,
   Download,
   RefreshCw,
+  Share2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   DailyCheckIn,
@@ -28,6 +30,7 @@ import {
   UserProfile,
 } from '../../types';
 import { AIService } from '../../services/aiService';
+import { PDFReportService } from '../../services/pdfReportService';
 import { DataProvenanceBadge } from '../common/DataProvenanceBadge';
 
 interface Props {
@@ -58,32 +61,121 @@ export const DoctorReportModal: React.FC<Props> = ({
   onReportGenerated,
 }) => {
   const [report, setReport] = useState<DoctorReport>(initialReport);
-  const [selectedPeriod, setSelectedPeriod] = useState<number>(initialReport.periodDays || 30);
+  const [selectedPeriod, setSelectedPeriod] = useState<number>(initialReport?.periodDays || 30);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'ready' | 'error'>('idle');
+  const [pdfErrorMessage, setPdfErrorMessage] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleRegenerate = useCallback(
+    async (periodDays: number) => {
+      setIsRegenerating(true);
+      setSelectedPeriod(periodDays);
+      try {
+        const generated = await AIService.generateDoctorReport(
+          userProfile,
+          symptoms,
+          sleepRecords,
+          checkIns,
+          medications,
+          measurements,
+          safetyAlerts,
+          periodDays
+        );
+        setReport(generated);
+        onReportGenerated(generated);
+      } catch (err) {
+        console.error('Failed to regenerate doctor report:', err);
+      } finally {
+        setIsRegenerating(false);
+      }
+    },
+    [userProfile, symptoms, sleepRecords, checkIns, medications, measurements, safetyAlerts, onReportGenerated]
+  );
+
+  // Synchronize report state whenever initialReport, userProfile, or modal open state changes
+  useEffect(() => {
+    if (initialReport) {
+      setReport(initialReport);
+      setSelectedPeriod(initialReport.periodDays || 30);
+    } else if (isOpen && !report && !isRegenerating) {
+      handleRegenerate(30);
+    }
+  }, [initialReport, isOpen, userProfile, report, isRegenerating, handleRegenerate]);
 
   if (!isOpen) return null;
 
-  const handleRegenerate = async (periodDays: number) => {
-    setIsRegenerating(true);
-    setSelectedPeriod(periodDays);
+  if (!report) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center space-y-4 shadow-xl border border-slate-200">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 mx-auto" />
+          <h3 className="font-bold text-slate-800 text-sm">Synthesizing Clinical Summary...</h3>
+          <p className="text-xs text-slate-500">Aggregating your active health logs, vitals, and medication timeline.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Single Source of Truth for Patient Identity
+  const patientDisplayName = userProfile?.name?.trim() || 'Not provided';
+  const patientDisplayAge = userProfile?.age && userProfile.age > 0
+    ? `${userProfile.age} yrs`
+    : (userProfile?.birthDate ? `DOB: ${userProfile.birthDate}` : 'Not provided');
+  const patientDisplaySex = userProfile?.sex && userProfile.sex !== 'prefer_not_to_say'
+    ? userProfile.sex.charAt(0).toUpperCase() + userProfile.sex.slice(1)
+    : 'Not provided';
+  const patientDisplayCountry = userProfile?.country?.trim() || 'Not provided';
+
+  const handleDownloadPDF = () => {
+    if (pdfStatus === 'generating') return;
+    setPdfStatus('generating');
+    setPdfErrorMessage(null);
+
+    // Yield to render "Generating PDF..." feedback immediately
+    setTimeout(() => {
+      try {
+        PDFReportService.downloadDoctorReportPDF(report, userProfile, medications);
+        setPdfStatus('ready');
+        setTimeout(() => {
+          setPdfStatus('idle');
+        }, 3000);
+      } catch (err: any) {
+        console.error('Failed to download PDF:', err);
+        setPdfStatus('error');
+        setPdfErrorMessage(err?.message || 'Failed to generate PDF. Please try again.');
+      }
+    }, 30);
+  };
+
+  const handleSharePDF = async () => {
+    if (isSharing || pdfStatus === 'generating') return;
+    setIsSharing(true);
+    setPdfStatus('generating');
+    setPdfErrorMessage(null);
+
     try {
-      const generated = await AIService.generateDoctorReport(
-        userProfile,
-        symptoms,
-        sleepRecords,
-        checkIns,
-        medications,
-        measurements,
-        safetyAlerts,
-        periodDays
-      );
-      setReport(generated);
-      onReportGenerated(generated);
-    } catch (err) {
-      console.error('Failed to regenerate doctor report:', err);
+      await PDFReportService.shareDoctorReportPDF(report, userProfile, medications);
+      setPdfStatus('ready');
+      setTimeout(() => {
+        setPdfStatus('idle');
+      }, 3000);
+    } catch (err: any) {
+      console.error('Failed to share PDF:', err);
+      // Graceful fallback to download
+      try {
+        PDFReportService.downloadDoctorReportPDF(report, userProfile, medications);
+        setPdfStatus('ready');
+        setTimeout(() => {
+          setPdfStatus('idle');
+        }, 3000);
+      } catch (dlErr: any) {
+        setPdfStatus('error');
+        setPdfErrorMessage(dlErr?.message || 'Failed to share or download PDF.');
+      }
     } finally {
-      setIsRegenerating(false);
+      setIsSharing(false);
     }
   };
 
@@ -91,11 +183,13 @@ export const DoctorReportModal: React.FC<Props> = ({
     window.print();
   };
 
+  const canShare = PDFReportService.canSharePDF();
+
   const handleCopyText = () => {
     const plainText = `
 PATIENT HEALTH SUMMARY
-Name: ${report.patientSummary.name}
-Age: ${report.patientSummary.age} | Sex: ${report.patientSummary.sex}
+Name: ${patientDisplayName}
+Age: ${patientDisplayAge} | Biological Sex: ${patientDisplaySex} | Location: ${patientDisplayCountry}
 Report Period: ${report.periodLabel}
 Generated: ${new Date(report.generatedAt).toLocaleString()}
 
@@ -116,10 +210,15 @@ ${report.patternsObserved.calculatedInformation.map((c) => `- ${c}`).join('\n')}
 ${report.patternsObserved.aiGeneratedObservations.map((o) => `- ${o}`).join('\n')}
 
 CURRENT MEDICATIONS / SUPPLEMENTS:
-${report.currentMedications.map((m) => `- ${m.name} (${m.dosage}, ${m.frequency})`).join('\n')}
+${medications && medications.length > 0 ? medications.map((m) => `- ${m.name} (${m.dosage || 'Not specified'}, ${m.frequency || 'Not specified'})`).join('\n') : '- Not provided'}
 
-RELEVANT MEDICAL HISTORY:
-${report.relevantMedicalHistory.map((h) => `- ${h}`).join('\n')}
+RELEVANT MEDICAL HISTORY & ALLERGIES:
+${((userProfile?.conditions && userProfile.conditions.length > 0) || (userProfile?.allergies && userProfile.allergies.length > 0))
+  ? [
+      ...(userProfile.conditions || []).map((c) => `- Condition: ${c}`),
+      ...(userProfile.allergies || []).map((a) => `- Allergy: ${a}`),
+    ].join('\n')
+  : '- Not provided'}
 
 RECENT MEASUREMENTS:
 ${report.recentMeasurements.map((m) => `- ${m.metric}: ${m.value} (${m.date})`).join('\n')}
@@ -181,22 +280,68 @@ This document is a structured summary of patient-reported log entries and calcul
             </button>
           </div>
 
-          {/* Print & Copy Actions */}
-          <div className="flex items-center gap-2">
+          {/* Print, Download, Share & Copy Actions */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleCopyText}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              title="Copy text summary to clipboard"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied!' : 'Copy Text'}</span>
+              <span className="hidden xs:inline">{copied ? 'Copied!' : 'Copy Text'}</span>
+            </button>
+
+            {/* Share PDF (when supported by browser) */}
+            {canShare && (
+              <button
+                onClick={handleSharePDF}
+                disabled={pdfStatus === 'generating' || isSharing}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                title="Share PDF report directly via native share sheet"
+              >
+                <Share2 className="w-3.5 h-3.5 text-teal-700" />
+                <span className="hidden sm:inline">Share PDF</span>
+              </button>
+            )}
+
+            {/* Download PDF button with loading feedback */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={pdfStatus === 'generating'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
+                pdfStatus === 'ready'
+                  ? 'bg-emerald-700 text-white'
+                  : pdfStatus === 'generating'
+                  ? 'bg-teal-800 text-white opacity-90 cursor-wait'
+                  : 'bg-teal-700 hover:bg-teal-800 text-white'
+              }`}
+              title="Download standalone PDF document to device"
+            >
+              {pdfStatus === 'generating' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Generating PDF...</span>
+                </>
+              ) : pdfStatus === 'ready' ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-200" />
+                  <span>PDF ready</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </>
+              )}
             </button>
 
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              title="Print / Save as PDF"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print / Download PDF</span>
+              <span className="hidden sm:inline">Print</span>
             </button>
 
             <button
@@ -207,6 +352,22 @@ This document is a structured summary of patient-reported log entries and calcul
             </button>
           </div>
         </div>
+
+        {/* Optional Error Alert Banner if PDF generation fails */}
+        {pdfErrorMessage && (
+          <div className="print:hidden px-4 sm:px-6 py-2 bg-rose-50 border-b border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{pdfErrorMessage}</span>
+            </div>
+            <button
+              onClick={() => setPdfErrorMessage(null)}
+              className="text-rose-600 hover:text-rose-900 font-bold text-xs underline cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* CLINICAL ONE-PAGE REPORT BODY */}
         <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 bg-white text-slate-900 font-sans print:p-0 print:overflow-visible">
@@ -220,14 +381,14 @@ This document is a structured summary of patient-reported log entries and calcul
                 <span className="text-[11px] text-slate-500 font-mono">CONFIDENTIAL PATIENT LOG</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">
-                {report.patientSummary.name}
+                {patientDisplayName}
               </h1>
               <div className="flex items-center gap-3 text-xs text-slate-600 pt-0.5">
-                <span>Age: <strong>{report.patientSummary.age}</strong></span>
+                <span>Age: <strong>{patientDisplayAge}</strong></span>
                 <span>·</span>
-                <span>Biological Sex: <strong>{report.patientSummary.sex}</strong></span>
+                <span>Biological Sex: <strong>{patientDisplaySex}</strong></span>
                 <span>·</span>
-                <span>Location: <strong>{report.patientSummary.country}</strong></span>
+                <span>Location: <strong>{patientDisplayCountry}</strong></span>
               </div>
             </div>
 
@@ -422,13 +583,19 @@ This document is a structured summary of patient-reported log entries and calcul
                 CURRENT MEDICATIONS / SUPPLEMENTS (USER-ENTERED)
               </h3>
               <ul className="space-y-1">
-                {report.currentMedications.map((m, idx) => (
-                  <li key={idx} className="p-2 bg-slate-50 rounded border border-slate-200">
-                    <span className="font-semibold text-slate-900">{m.name}</span>
-                    <span className="text-slate-500"> — {m.dosage} ({m.frequency})</span>
-                    {m.purpose && <span className="block text-[11px] text-slate-500 italic">{m.purpose}</span>}
+                {medications && medications.length > 0 ? (
+                  medications.map((m, idx) => (
+                    <li key={idx} className="p-2 bg-slate-50 rounded border border-slate-200">
+                      <span className="font-semibold text-slate-900">{m.name}</span>
+                      <span className="text-slate-500"> — {m.dosage || 'Not specified'} ({m.frequency || 'Not specified'})</span>
+                      {m.purpose && <span className="block text-[11px] text-slate-500 italic">{m.purpose}</span>}
+                    </li>
+                  ))
+                ) : (
+                  <li className="p-2 bg-slate-50 rounded border border-slate-200 text-slate-500 italic">
+                    Not provided
                   </li>
-                ))}
+                )}
               </ul>
             </div>
 
@@ -438,11 +605,24 @@ This document is a structured summary of patient-reported log entries and calcul
                 RELEVANT MEDICAL HISTORY & ALLERGIES
               </h3>
               <ul className="space-y-1">
-                {report.relevantMedicalHistory.map((item, idx) => (
-                  <li key={idx} className="p-2 bg-slate-50 rounded border border-slate-200 text-slate-700">
-                    {item}
+                {((userProfile?.conditions && userProfile.conditions.length > 0) || (userProfile?.allergies && userProfile.allergies.length > 0)) ? (
+                  <>
+                    {userProfile.conditions?.map((item, idx) => (
+                      <li key={`c-${idx}`} className="p-2 bg-slate-50 rounded border border-slate-200 text-slate-700">
+                        <strong className="text-slate-900">Condition: </strong> {item}
+                      </li>
+                    ))}
+                    {userProfile.allergies?.map((item, idx) => (
+                      <li key={`a-${idx}`} className="p-2 bg-slate-50 rounded border border-slate-200 text-slate-700">
+                        <strong className="text-slate-900">Allergy: </strong> {item}
+                      </li>
+                    ))}
+                  </>
+                ) : (
+                  <li className="p-2 bg-slate-50 rounded border border-slate-200 text-slate-500 italic">
+                    Not provided
                   </li>
-                ))}
+                )}
               </ul>
             </div>
           </div>

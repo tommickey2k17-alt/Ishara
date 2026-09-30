@@ -111,7 +111,7 @@ export const DoctorVisitMode: React.FC<Props> = ({
               </div>
               <div>
                 <span className="text-[11px] font-mono tracking-widest text-teal-300 uppercase block font-semibold">
-                  CLINICAL APPOINTMENT BRIEFING
+                  APPOINTMENT PREPARATION
                 </span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
                   Doctor Visit Mode
@@ -119,30 +119,30 @@ export const DoctorVisitMode: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setIsDoctorScreenMode(!isDoctorScreenMode)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer text-center ${
                   isDoctorScreenMode
                     ? 'bg-teal-400 text-teal-950 border-teal-300'
                     : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
                 }`}
               >
-                {isDoctorScreenMode ? '✓ Exam Room View' : 'Exam Room High-Contrast'}
+                {isDoctorScreenMode ? '✓ High-contrast reading view' : 'High-contrast reading view'}
               </button>
 
               <button
                 onClick={onOpenReportModal}
-                className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5 shrink-0" />
                 <span>Full Doctor Report</span>
               </button>
             </div>
           </div>
 
           <p className="text-xs sm:text-sm text-teal-100/90 max-w-2xl leading-relaxed">
-            Concise, appointment-ready briefing compiled from your journal logs. Designed to make your 15-minute consultation efficient, focused, and objective without automated diagnoses.
+            A clear summary compiled from your health journal. Designed to help you and your doctor make the most of your appointment without guesswork.
           </p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export const DoctorVisitMode: React.FC<Props> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-teal-600" />
-              1. Chief Concern / Reason for Visit
+              1. Main Reason for Visit
             </span>
             <DataProvenanceBadge type="user_fact" />
           </div>
@@ -162,16 +162,16 @@ export const DoctorVisitMode: React.FC<Props> = ({
             {latestReport?.reasonForVisit || 'Consultation for recurrent headaches and sleep-stress correlation evaluation'}
           </p>
           <div className="text-xs text-slate-600 space-y-1 pt-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span className="font-semibold text-slate-700 block text-[11px] uppercase">Patient Profile Context:</span>
+            <span className="font-semibold text-slate-700 block text-[11px] uppercase">Your Information:</span>
             <p>
-              {userProfile.name}, {userProfile.age} yrs, {userProfile.sex}
+              {userProfile?.name?.trim() || 'Not provided'}, {userProfile?.age && userProfile.age > 0 ? `${userProfile.age} yrs` : 'Age: Not provided'}, {userProfile?.sex && userProfile.sex !== 'prefer_not_to_say' ? userProfile.sex : 'Sex: Not provided'}
             </p>
             <p>
-              Documented Conditions: {userProfile.conditions.join(', ') || 'None noted'}
+              Documented Conditions: {userProfile?.conditions?.length > 0 ? userProfile.conditions.join(', ') : 'Not provided'}
             </p>
             {userProfile.userReportedConcerns && userProfile.userReportedConcerns.length > 0 && (
               <div className="text-[11px] text-amber-800 bg-amber-50 p-1.5 rounded border border-amber-200">
-                <strong>Unconfirmed user concern: </strong>
+                <strong>What you wondered about: </strong>
                 {userProfile.userReportedConcerns[0].text}
               </div>
             )}
@@ -207,8 +207,8 @@ export const DoctorVisitMode: React.FC<Props> = ({
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">3. Recent Symptom Trajectory</h3>
-            <p className="text-xs text-slate-500">Chronological episodes ready to show your physician</p>
+            <h3 className="text-sm font-bold text-slate-900">3. How Symptoms Have Changed Over Time</h3>
+            <p className="text-xs text-slate-500">Recent episodes in order, ready to show your doctor</p>
           </div>
           <div className="flex items-center gap-2">
             <span
@@ -245,7 +245,7 @@ export const DoctorVisitMode: React.FC<Props> = ({
 
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-[11px] text-slate-500">
-                  Fever: <strong>{symp.feverReported || 'no'}</strong>
+                  Fever: <strong>{symp.feverReported === 'yes' ? 'Yes' : symp.feverReported === 'no' ? 'No' : 'Not recorded'}</strong>
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 font-bold border border-teal-200">
                   {symp.severity}/10
@@ -263,7 +263,7 @@ export const DoctorVisitMode: React.FC<Props> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Pill className="w-4 h-4 text-emerald-600" />
-              4. Active Medications & Supplements
+              4. Current Medicines & Supplements
             </span>
             <DataProvenanceBadge type="user_fact" />
           </div>
@@ -289,18 +289,50 @@ export const DoctorVisitMode: React.FC<Props> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Activity className="w-4 h-4 text-teal-600" />
-              5. Recent Objective Vitals
+              5. Recent Health Measurements
             </span>
             <DataProvenanceBadge type="calculated" />
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {measurements.slice(0, 4).map((m) => (
-              <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 font-semibold uppercase block">{m.type.replace('_', ' ')}</span>
-                <span className="text-base font-extrabold text-slate-900">{m.value} {m.unit}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">{m.date}</span>
+            {measurements.length > 0 ? (
+              // Show unique latest readings by metric type
+              (() => {
+                const sorted = [...measurements].sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date));
+                const map = new Map<string, MeasurementRecord>();
+                sorted.forEach((m) => {
+                  if (!map.has(m.type)) {
+                    map.set(m.type, m);
+                  }
+                });
+                return Array.from(map.values())
+                  .slice(0, 4)
+                  .map((m) => {
+                    const isToday = m.date === new Date().toISOString().split('T')[0];
+                    return (
+                      <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] text-slate-500 font-semibold uppercase block truncate">
+                            {m.type.replace('_', ' ')}
+                          </span>
+                          {isToday && (
+                            <span className="text-[9px] font-bold text-teal-800 bg-teal-100/80 px-1.5 py-0.2 rounded">
+                              Today
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-base font-extrabold text-slate-900 block">
+                          {m.value} {m.unit}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">{m.date}</span>
+                      </div>
+                    );
+                  });
+              })()
+            ) : (
+              <div className="col-span-2 py-4 text-center text-slate-400 text-xs">
+                No vitals logged yet. Add your blood pressure, weight, or temperature in Today's Check-in.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -368,14 +400,14 @@ export const DoctorVisitMode: React.FC<Props> = ({
             Finished your appointment?
           </h4>
           <p className="text-xs text-slate-600">
-            Log what the physician advised so your health timeline remains complete.
+            Write down what the doctor advised so your health notes stay up to date.
           </p>
         </div>
         <button
           onClick={() => setShowLogVisitModal(true)}
-          className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
+          className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 w-full sm:w-auto"
         >
-          Record Doctor's Instructions
+          Record Doctor's Advice
         </button>
       </div>
 

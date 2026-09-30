@@ -64,7 +64,7 @@ export const TriStateSelector: React.FC<Props> = ({
               : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/60'
           }`}
         >
-          Not Recorded
+          Not sure
         </button>
       </div>
     </div>

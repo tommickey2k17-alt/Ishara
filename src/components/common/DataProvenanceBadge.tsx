@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { UserCheck, Calculator, Sparkles, ShieldAlert, Info } from 'lucide-react';
+import { UserCheck, Calculator, Sparkles, Info } from 'lucide-react';
 import { DataProvenance } from '../../types';
 
 interface Props {
@@ -25,35 +25,35 @@ export const DataProvenanceBadge: React.FC<Props> = ({
     switch (type) {
       case 'user_fact':
         return {
-          label: customLabel || 'USER-REPORTED FACT',
-          shortLabel: 'USER FACT',
+          label: customLabel || 'Logged by you',
+          shortLabel: 'Your note',
           icon: UserCheck,
           styles: 'bg-sky-50 text-sky-800 border-sky-200/80',
-          tooltip: 'Directly logged by user. Unverified patient-reported observation.',
+          tooltip: 'Information you entered directly into your journal.',
         };
       case 'calculated':
         return {
-          label: customLabel || 'CALCULATED DATA',
-          shortLabel: 'CALCULATED',
+          label: customLabel || 'Calculated',
+          shortLabel: 'Calculated',
           icon: Calculator,
           styles: 'bg-indigo-50 text-indigo-800 border-indigo-200/80',
-          tooltip: 'Mathematical computation or average from recorded timestamps and entries.',
+          tooltip: 'Numbers and averages worked out from your entries.',
         };
       case 'ai_observation':
         return {
-          label: customLabel || 'AI OBSERVATION (NON-DIAGNOSTIC)',
-          shortLabel: 'AI OBSERVATION',
+          label: customLabel || 'Pattern spotted',
+          shortLabel: 'Pattern spotted',
           icon: Sparkles,
           styles: 'bg-amber-50 text-amber-800 border-amber-200/80',
-          tooltip: 'Pattern synthesis by language model. Not a clinical diagnosis.',
+          tooltip: 'A pattern spotted in your health entries. This is not a medical diagnosis.',
         };
       default:
         return {
-          label: 'RECORD',
-          shortLabel: 'RECORD',
+          label: 'Record',
+          shortLabel: 'Record',
           icon: Info,
           styles: 'bg-slate-50 text-slate-700 border-slate-200',
-          tooltip: 'Recorded data',
+          tooltip: 'Recorded health information.',
         };
     }
   };
@@ -63,18 +63,18 @@ export const DataProvenanceBadge: React.FC<Props> = ({
 
   const sizeClasses =
     size === 'xs'
-      ? 'text-[10px] px-1.5 py-0.5 gap-1 font-mono tracking-wider'
+      ? 'text-[10px] px-1.5 py-0.5 gap-1'
       : size === 'sm'
-      ? 'text-[11px] px-2 py-0.5 gap-1.5 font-mono tracking-wider'
-      : 'text-xs px-2.5 py-1 gap-2 font-mono tracking-wider';
+      ? 'text-[11px] px-2 py-0.5 gap-1'
+      : 'text-xs px-2.5 py-1 gap-1.5';
 
   return (
     <span
-      className={`inline-flex items-center font-bold uppercase rounded border select-none ${config.styles} ${sizeClasses} ${className}`}
+      className={`inline-flex items-center rounded-md font-medium border select-none transition-colors ${config.styles} ${sizeClasses} ${className}`}
       title={config.tooltip}
     >
-      <Icon className={size === 'xs' ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-      <span>{config.label}</span>
+      <Icon className="w-2.5 h-2.5 shrink-0 opacity-80" />
+      <span>{config.shortLabel}</span>
     </span>
   );
 };

@@ -114,6 +114,9 @@ export interface DailyCheckIn {
   exerciseMinutes?: number;
   temperature?: number; // in Celsius or Fahrenheit
   weight?: number; // in kg
+  bloodPressure?: string; // e.g. "120/80"
+  systolicBP?: number;
+  diastolicBP?: number;
   newSymptoms: boolean;
   newSymptomsNotes?: string;
   symptomsWorse: boolean;

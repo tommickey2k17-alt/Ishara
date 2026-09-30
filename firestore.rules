@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Per-user isolated health data tree
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create, update, delete: if isOwner(userId) && isValidId(userId);
+
+      // User Profile subcollection
+      match /profile/{profileId} {
+        allow get: if isOwner(userId) && isValidId(profileId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(profileId);
+      }
+
+      // Symptoms subcollection
+      match /symptoms/{symptomId} {
+        allow get: if isOwner(userId) && isValidId(symptomId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(symptomId);
+      }
+
+      // Sleep logs subcollection
+      match /sleep/{sleepId} {
+        allow get: if isOwner(userId) && isValidId(sleepId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(sleepId);
+      }
+
+      // Biometric measurements subcollection
+      match /measurements/{measurementId} {
+        allow get: if isOwner(userId) && isValidId(measurementId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(measurementId);
+      }
+
+      // Medications and supplements subcollection
+      match /medications/{medicationId} {
+        allow get: if isOwner(userId) && isValidId(medicationId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(medicationId);
+      }
+
+      // Medical documents and lab reports subcollection
+      match /medicalRecords/{recordId} {
+        allow get: if isOwner(userId) && isValidId(recordId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(recordId);
+      }
+
+      // Clinical reports and PDF records subcollection
+      match /reports/{reportId} {
+        allow get: if isOwner(userId) && isValidId(reportId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(reportId);
+      }
+
+      // Daily check-ins subcollection
+      match /checkins/{checkinId} {
+        allow get: if isOwner(userId) && isValidId(checkinId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(checkinId);
+      }
+
+      // Doctor visits subcollection
+      match /doctorVisits/{visitId} {
+        allow get: if isOwner(userId) && isValidId(visitId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(visitId);
+      }
+
+      // Clinical red-flag safety alerts subcollection
+      match /safetyAlerts/{alertId} {
+        allow get: if isOwner(userId) && isValidId(alertId);
+        allow list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(alertId);
+      }
+    }
+  }
+}

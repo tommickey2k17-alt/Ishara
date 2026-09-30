@@ -8,13 +8,12 @@ import {
   Clock,
   Stethoscope,
   Moon,
-  Pill,
   UserCheck,
   FileText,
   Activity,
-  Filter,
-  Calendar,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   DailyCheckIn,
@@ -27,6 +26,7 @@ import {
   SymptomEpisode,
 } from '../../types';
 import { DataProvenanceBadge } from '../common/DataProvenanceBadge';
+import { formatSleepQuality } from '../../utils/plainLanguage';
 
 interface Props {
   symptoms: SymptomEpisode[];
@@ -75,6 +75,11 @@ export const HealthTimeline: React.FC<Props> = ({
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'symptoms' | 'sleep' | 'clinical' | 'vitals'>('all');
   const [selectedDays, setSelectedDays] = useState<number>(30);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Aggregate items into a unified chronological stream
   const timelineItems: TimelineItem[] = [];
@@ -86,25 +91,40 @@ export const HealthTimeline: React.FC<Props> = ({
       date: s.date,
       time: s.startTime,
       type: 'symptom',
-      title: `${s.symptomName} (${s.severity}/10)`,
-      subtitle: [s.location, s.characterDescription, s.duration].filter(Boolean).join(' · '),
+      title: `${s.symptomName} (rated ${s.severity}/10)`,
+      subtitle: [
+        s.location,
+        s.characterDescription,
+        s.duration ? `Lasted: ${s.duration}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
       severity: s.severity,
-      badge: s.isResolved ? 'Resolved' : 'Active',
+      badge: s.isResolved ? 'Cleared up' : 'Still active',
       badgeColor: s.isResolved ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-      details: s.userNotes || s.contextNotes,
+      details: [
+        s.associatedSymptoms?.length ? `Other symptoms noticed: ${s.associatedSymptoms.join(', ')}` : '',
+        s.relievingFactors?.length ? `What helped: ${s.relievingFactors.join(', ')}` : '',
+        s.triggers?.length ? `Possible triggers: ${s.triggers.join(', ')}` : '',
+        s.userNotes ? `Note: "${s.userNotes}"` : '',
+      ]
+        .filter(Boolean)
+        .join(' \n'),
     });
   });
 
   // Sleep
   sleepRecords.forEach((sl) => {
+    const hours = Math.floor(sl.totalMinutes / 60);
+    const mins = sl.totalMinutes % 60;
     timelineItems.push({
       id: `sleep-${sl.id}`,
       date: sl.date,
       time: sl.wakeTime,
       type: 'sleep',
-      title: `Sleep: ${Math.floor(sl.totalMinutes / 60)}h ${sl.totalMinutes % 60}m`,
-      subtitle: `${sl.bedtime} to ${sl.wakeTime} · Quality: ${sl.quality}`,
-      badge: `${sl.quality} rest`,
+      title: `Sleep: ${hours}h ${mins}m`,
+      subtitle: `${sl.bedtime} to ${sl.wakeTime} · Rest: ${formatSleepQuality(sl.quality)}`,
+      badge: formatSleepQuality(sl.quality),
       badgeColor: sl.quality === 'poor' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700',
       details: sl.notes,
     });
@@ -118,7 +138,7 @@ export const HealthTimeline: React.FC<Props> = ({
       type: 'visit',
       title: `Doctor Visit: ${v.doctorName}`,
       subtitle: `${v.specialty} · ${v.clinic}`,
-      badge: 'Clinician Visit',
+      badge: 'Doctor visit',
       badgeColor: 'bg-teal-50 text-teal-800',
       details: `${v.reasonForVisit}. Next steps: ${v.nextSteps}`,
     });
@@ -132,22 +152,58 @@ export const HealthTimeline: React.FC<Props> = ({
       type: 'record',
       title: r.title,
       subtitle: `${r.category.replace('_', ' ')} · ${r.providerOrClinic}`,
-      badge: 'Lab / Document',
+      badge: 'Test result',
       badgeColor: 'bg-blue-50 text-blue-700',
       details: r.documentSummary || r.userNotes,
     });
   });
 
-  // Measurements
+  // Measurements (Blood Pressure, Weight, Temperature)
   measurements.forEach((m) => {
+    let title = `${m.type.replace('_', ' ').toUpperCase()}: ${m.value} ${m.unit}`;
+    let badgeColor = 'bg-teal-50 text-teal-800';
+
+    if (m.type === 'blood_pressure') {
+      title = `Blood Pressure: ${m.value} ${m.unit}`;
+      badgeColor = 'bg-rose-50 text-rose-700';
+    } else if (m.type === 'weight') {
+      title = `Body Weight: ${m.value} ${m.unit}`;
+      badgeColor = 'bg-teal-50 text-teal-800';
+    } else if (m.type === 'temperature') {
+      title = `Body Temperature: ${m.value} ${m.unit}`;
+      badgeColor = 'bg-amber-50 text-amber-800';
+    }
+
     timelineItems.push({
       id: `meas-${m.id}`,
       date: m.date,
       type: 'measurement',
-      title: `${m.type.replace('_', ' ').toUpperCase()}: ${m.value} ${m.unit}`,
-      subtitle: m.notes || 'Recorded vital',
-      badge: 'Measurement',
-      badgeColor: 'bg-slate-100 text-slate-700',
+      title,
+      subtitle: m.notes || 'Recorded health metric',
+      badge: 'Vital Record',
+      badgeColor,
+    });
+  });
+
+  // Daily Check-ins
+  (checkIns || []).forEach((c) => {
+    const detailsList: string[] = [];
+    if (c.energyLevel !== undefined) detailsList.push(`Energy: ${c.energyLevel}/10`);
+    if (c.stressLevel !== undefined) detailsList.push(`Stress: ${c.stressLevel}/10`);
+    if (c.moodLevel) detailsList.push(`Mood: ${c.moodLevel}`);
+    if (c.bloodPressure) detailsList.push(`BP: ${c.bloodPressure} mmHg`);
+    if (c.weight) detailsList.push(`Weight: ${c.weight} kg`);
+    if (c.temperature) detailsList.push(`Temp: ${c.temperature} °C`);
+
+    timelineItems.push({
+      id: `checkin-${c.id}`,
+      date: c.date,
+      type: 'checkin',
+      title: `Daily Health Check-in`,
+      subtitle: `Sleep: ${c.sleepHours}h (${formatSleepQuality(c.sleepQuality)}) · Energy: ${c.energyLevel}/10`,
+      badge: 'Daily Check-in',
+      badgeColor: 'bg-emerald-50 text-emerald-800',
+      details: detailsList.join(' · ') || undefined,
     });
   });
 
@@ -157,12 +213,12 @@ export const HealthTimeline: React.FC<Props> = ({
       id: `alert-${a.id}`,
       date: a.date,
       type: 'alert',
-      title: `Safety Prompt: ${a.triggerSymptoms.join(', ')}`,
+      title: `Safety Reminder: ${a.triggerSymptoms.join(', ')}`,
       subtitle: a.explanation,
-      badge: 'Safety Acknowledged',
+      badge: 'Safety noted',
       badgeColor: 'bg-rose-50 text-rose-700',
       isAlert: true,
-      details: `Recommended action: ${a.recommendedAction}`,
+      details: a.recommendedAction ? `Recommended step: ${a.recommendedAction}` : undefined,
     });
   });
 
@@ -177,7 +233,6 @@ export const HealthTimeline: React.FC<Props> = ({
       return false;
     if (selectedFilter === 'vitals' && item.type !== 'measurement' && item.type !== 'checkin') return false;
 
-    // Filter by days
     const itemTime = new Date(item.date).getTime();
     const cutoffTime = Date.now() - selectedDays * 86400000;
     return itemTime >= cutoffTime;
@@ -209,7 +264,7 @@ export const HealthTimeline: React.FC<Props> = ({
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Health Timeline</h2>
           <p className="text-xs sm:text-sm text-slate-500">
-            Unified chronological record of symptoms, sleep, clinical visits, vitals, and lab summaries
+            See your symptoms, sleep, doctor visits, and health numbers in the order they happened
           </p>
         </div>
 
@@ -232,11 +287,11 @@ export const HealthTimeline: React.FC<Props> = ({
       {/* Category Filter Tabs */}
       <div className="flex flex-wrap gap-2 text-xs font-semibold">
         {[
-          { id: 'all', label: 'All Health Events' },
-          { id: 'symptoms', label: 'Symptoms Only' },
-          { id: 'sleep', label: 'Sleep Logs' },
-          { id: 'clinical', label: 'Doctor Visits & Records' },
-          { id: 'vitals', label: 'Vitals & Measurements' },
+          { id: 'all', label: 'All Events' },
+          { id: 'symptoms', label: 'Symptoms' },
+          { id: 'sleep', label: 'Sleep' },
+          { id: 'clinical', label: 'Doctor Visits & Tests' },
+          { id: 'vitals', label: 'Health Numbers' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -253,69 +308,93 @@ export const HealthTimeline: React.FC<Props> = ({
       </div>
 
       {/* Timeline Stream */}
-      <div className="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-6 pt-2">
+      <div className="relative ml-2 sm:ml-0 pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-6 pt-2">
         {filteredItems.length > 0 ? (
-          filteredItems.map((item) => (
-            <div key={item.id} className="relative group">
-              {/* Event node dot / icon */}
-              <div className="absolute -left-[35px] sm:-left-[43px] top-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center shadow-xs group-hover:border-teal-500 transition-colors">
-                {getEventIcon(item.type)}
-              </div>
+          filteredItems.map((item) => {
+            const isExpanded = !!expandedItems[item.id];
+            const hasExtraDetails = !!item.details;
 
-              {/* Event Card */}
-              <div
-                className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
-                  item.isAlert
-                    ? 'border-rose-200 bg-rose-50/40'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-slate-500">
-                        {item.date} {item.time ? `· ${item.time}` : ''}
-                      </span>
-                      {item.badge && (
-                        <span
-                          className={`text-[11px] font-semibold px-2 py-0.5 rounded border border-current text-opacity-90 ${item.badgeColor}`}
-                        >
-                          {item.badge}
+            return (
+              <div key={item.id} className="relative group">
+                {/* Event node dot / icon */}
+                <div className="absolute -left-[35px] sm:-left-[43px] top-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border-2 border-slate-300 flex items-center justify-center shadow-xs group-hover:border-teal-500 transition-colors">
+                  {getEventIcon(item.type)}
+                </div>
+
+                {/* Event Card with Progressive Disclosure */}
+                <div
+                  className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
+                    item.isAlert
+                      ? 'border-rose-200 bg-rose-50/40'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-slate-500">
+                          {item.date} {item.time ? `· ${item.time}` : ''}
                         </span>
+                        {item.badge && (
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded border border-current text-opacity-90 ${item.badgeColor}`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                        <DataProvenanceBadge
+                          type={
+                            item.type === 'sleep' || item.type === 'measurement'
+                              ? 'calculated'
+                              : item.type === 'record'
+                              ? 'ai_observation'
+                              : 'user_fact'
+                          }
+                        />
+                      </div>
+
+                      <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                        {item.title}
+                      </h4>
+
+                      {item.subtitle && (
+                        <p className="text-xs text-slate-600 leading-relaxed">{item.subtitle}</p>
                       )}
-                      <DataProvenanceBadge
-                        type={
-                          item.type === 'sleep' || item.type === 'measurement'
-                            ? 'calculated'
-                            : item.type === 'record'
-                            ? 'ai_observation'
-                            : 'user_fact'
-                        }
-                      />
+
+                      {/* Progressive disclosure for details */}
+                      {hasExtraDetails && (
+                        <div className="pt-2">
+                          {isExpanded ? (
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed space-y-1">
+                              {item.details}
+                              <button
+                                onClick={() => toggleExpand(item.id)}
+                                className="text-teal-700 hover:text-teal-800 font-semibold block text-[11px] pt-1 cursor-pointer"
+                              >
+                                Show less
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => toggleExpand(item.id)}
+                              className="text-xs text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>View details & notes</span>
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-
-                    <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                      {item.title}
-                    </h4>
-
-                    {item.subtitle && (
-                      <p className="text-xs text-slate-600 leading-relaxed">{item.subtitle}</p>
-                    )}
-
-                    {item.details && (
-                      <p className="text-xs text-slate-500 italic pt-1 border-t border-slate-100 mt-2">
-                        {item.details}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500">
             <Clock className="w-8 h-8 mx-auto text-slate-400 mb-2" />
-            <p className="font-semibold text-slate-700">No events found for this filter and time window.</p>
+            <p className="font-semibold text-slate-700">No records found for this time period.</p>
           </div>
         )}
       </div>
